@@ -6,7 +6,7 @@
 #include <stdarg.h>
 #include <time.h>
 #include "fileRead.h"
-#include "../Stack/stack.h"
+#include "../stack/stack.h"
 #include "asm.h"
 #include "log.h"
 
@@ -110,7 +110,6 @@ int main(const int argc, const char* argv[])
         return FILEREAD_ERR;
     }
 
-    int err = 0;
     bytecode_t bytecode = {(char *)calloc(100, sizeof(char)), 100, 0};
     labelTable_t labels = {(label_t *)calloc(10, sizeof(label_t)), 10, 0};
     tokens_t tokens = {0};
@@ -166,7 +165,7 @@ int main(const int argc, const char* argv[])
         return FILEOPEN_ERR;
     }
 
-    if(fwrite(bytecode.bytecodeHolder, sizeof(char), bytecode.ip, byteCode) < bytecode.ip)
+    if(fwrite(bytecode.bytecodeHolder, (int)sizeof(char), bytecode.ip, byteCode) < bytecode.ip)
     {
         LOG(msgZeroArgs, "BYTECODE_WRITE_ERR", "", 0, "[error]");
         MEM_FREE();
@@ -217,7 +216,6 @@ int argDet(char *argToken, int *argHolder)          //Определение т�
     assert(argToken != NULL);
     assert(argHolder != NULL);
 
-    int charRead = 0;
     if (sscanf(argToken, "%d", argHolder))
         return ARG_NUMBER;
 
@@ -420,7 +418,7 @@ int Compiler(const tokens_t *tokens, bytecode_t *bytecode, labelTable_t *labels)
         if (labelIP = labeldet(labels, tokens->tokenArr[tokenNum]))      //Ищем уже считанную метку, чтобы компилятор не выдал ошибки
                 continue;
 
-        if (bytecode->ip >= bytecode->bytecodeHolderSize - 5 * sizeof(long long int))
+        if (bytecode->ip >= bytecode->bytecodeHolderSize - 5 * (int)sizeof(long long int))
             bytecode->bytecodeHolder = (char *)reallocUp(bytecode->bytecodeHolder, &bytecode->bytecodeHolderSize, sizeof(char));
         
         byte_t cmdNum = cmddet(commands, COMMANDS_NUM, tokens->tokenArr[tokenNum]);   //Ищем команду

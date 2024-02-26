@@ -3,9 +3,9 @@
 #include <assert.h>
 #include <stdarg.h>
 #include <stdint.h>
-#include "../Stack/stack.h"
-#include "../Assembler/asm.h"
-#include "../Onegin/fileReader.h"
+#include "../stack/stack.h"
+#include "../assembler/asm.h"
+#include "../onegin/fileReader.h"
 #include "processor.h"
 
 #define SIZE_OF_RAM 256
@@ -25,6 +25,7 @@
         if (stackPush(stackName, temp1 arg temp2))                                      \
         {                                                                               \
             ERRLOG(ARITHM_GRP_ERR, msgZeroArgs, "ARITHM_GRP_ERR", "", 0, "[error]");    \
+            stackPrint(stackName, IN_CONSOLE);                               \
         }                                                                               \
     } while(0)  
 
@@ -106,9 +107,10 @@ int main(int argc, char** argv)
 
     int lessSignBitMask = 0;
     int errorNum = 0;
-    for (; bytecode.ip < bytecode.bytecodeSize; bytecode.ip++)
+    for (; bytecode.ip < bytecode.bytecodeSize;)
         if (errorNum = doCommand(&processor, &bytecode))
             break;
+            
         
     stackDtor(&processor.Stack);
     stackDtor(&processor.returnPtrs);
@@ -145,6 +147,8 @@ int arithmetics(stack *stackName, const int command)
         ERRLOG(FATAL_ERR, msgZeroArgs, "FATAL_ERROR", "ARITHM_GRP", 0, "[error]");
         break;
     }
+
+    return 0;
 }
 
 void jmp(bytecode_t *bytecode)
@@ -244,8 +248,6 @@ int doCommand(processor_t *processor, bytecode_t *bytecode)
 {
     assert(processor != NULL);
     assert(bytecode != NULL);
-    printf("DONE");
-
     char cmd = *getCmd(bytecode, 0);
     ipInc(bytecode, sizeof(char));
 
@@ -282,8 +284,8 @@ int doCommand(processor_t *processor, bytecode_t *bytecode)
         break;
 
     case ARITHM_GRP:
-        if(arithmetics(&processor->Stack, cmd))
-            ERRLOG(ARITHM_CMD_FAIL, msgZeroArgs, "ARITHM_ERR", "", bytecode->ip, "[error]");
+        if (arithmetics(&processor->Stack, cmd))
+            {ERRLOG(ARITHM_CMD_FAIL, msgZeroArgs, "ARITHM_ERR", "", bytecode->ip, "[error]");}
         break; 
 
     case POP_GRP:
@@ -329,10 +331,8 @@ int doCommand(processor_t *processor, bytecode_t *bytecode)
         break;   
 
     case HALT:
-        free(bytecode->bytecode);         
-        stackDtor(&processor->Stack);
-        stackDtor(&processor->returnPtrs);
         ERRLOG(PROGRAMM_ENDED, msgZeroArgs, "PROGRAMM_ENDED", "", bytecode->ip, "");
+        return PROGRAMM_ENDED;
         break;
     
     case CALL:
