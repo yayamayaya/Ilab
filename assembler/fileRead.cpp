@@ -55,6 +55,14 @@ int spacesToZeroes(char *code, const int fileSize, int *wordCount)
         if (code[i] == ';')
             while (code[i] != '\n' && code[i] != '\r' && code[i] != '\0')
                 i++;
+
+        if (code[i] == '[')
+            do
+            {
+                assert(i < fileSize);
+                i++;
+            } while (code[i] != ']');
+            
         
         if ((!isspace(code[i + 1]) || !isspace(code[i - 1])) && isspace(code[i]) || code[i] == ',')
         {
