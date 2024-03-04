@@ -1,1 +1,3 @@
 compileFolder
+!compileFolder/makefile
+BinaryTree/test.cpp
