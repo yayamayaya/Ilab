@@ -10,10 +10,15 @@ asmrunval:
 
 
 spu-main:
-	g++ ../processor/processor.c ../onegin/fileReader.c ../stack/stack.c -o spu	
-	
+	g++ ../processor/processor.c ../onegin/fileReader.c ../stack/stack.c -o spu
+spu-debug:
+	g++ -DDEBUG ../processor/processor.c ../onegin/fileReader.c ../stack/stack.c ../common/log.cpp -o spu
+
+
 spurun:
-	valgrind ./spu bytecode.txt
+	./spu bytecode.txt
+spurunval:
+	valgrind --leak-check=full ./spu bytecode.txt
 
 
 treeTest-m:
