@@ -126,6 +126,8 @@ int fileRead(char *fileName, char** buffPtr, char ***strArrPtr, int *fileSize, i
         *buffPtr = Buff;
     if(option != BUFF_ONLY)
         buffToStrArr(Buff, strArrPtr, stringNumber);
+
+    return 0;
 }
 
 void spacesToZeroes(char **strArrPtr, const int stringNumber)
