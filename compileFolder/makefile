@@ -8,10 +8,13 @@ asmrun:
 asmrunval:
 	valgrind ./asm code.txt bytecode.txt
 
+
 spu-main:
 	g++ ../processor/processor.c ../onegin/fileReader.c ../stack/stack.c -o spu	
+	
 spurun:
 	valgrind ./spu bytecode.txt
+
 
 treeTest-m:
 	g++ ../akinator/BinaryTree.cpp ../akinator/test.cpp -o Ttest
