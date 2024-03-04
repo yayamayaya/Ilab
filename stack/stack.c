@@ -4,8 +4,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#define DEBUG
-
 #ifdef DEBUG
 #define LOG(...) stackFileLog(pstk->logFile, __VA_ARGS__) 
 #define FILECLOSE()               \
@@ -16,8 +14,8 @@
 #define FILECLOSE()
 #endif
 
-char *msgNoArgs = "%-25s| %-20s| %-20s|\n";
-char *msgOneArg = "%-25s| %-20d| %-20s|\n";
+const char *msgNoArgs = "%-25s| %-20s| %-20s|\n";
+const char *msgOneArg = "%-25s| %-20d| %-20s|\n";
 
 hash_t hashFunc(const stack *pstk);
 int poisonFunc(stack *pstk);
@@ -25,7 +23,7 @@ int poisonCheck(const stack *pstk);
 int canaryCheck(const stack *pstk);
 int hashCheck(const stack *pstk);
 int stackVerificator(const stack *pstk);
-void stackFileLog(FILE *fileName, char *format, ...);
+void stackFileLog(FILE *fileName, const char *format, ...) __attribute__ ((format(fprintf, 2, 3)));;
 
 const dataType poison = 0xDD;
 const canary Lcanary = 0xDEDDEAD;
@@ -41,8 +39,8 @@ int stackCtor(stack *pstk, const int capacity, const char* logFileName)
     pstk->logFile = fopen(logFileName, "w");
     if (pstk->logFile == NULL)  //Проверка на нулевой указате, ""ль
     {
-        printf("[error]>>Can't open the log.\n", "");
-        #undef DEBUG        
+        printf("[error]>>Can't open stack log.\n");
+        //#undef DEBUG        
     }
     stackFileLog(pstk->logFile, "%-25s| %-20s| %-20s|\n\n", "INSTRUCT. NAME", "ARGUMENTS", "ERROR");
 #endif
@@ -123,7 +121,7 @@ int stackPush(stack *pstk, const dataType num)
             return MEM_RLC_ERR;
     
     pstk->data[pstk->size] = num;
-    LOG("%-25s| %-20d| %-20s|\n\n", "STK_PUSH", pstk->data[pstk->size], "");
+    LOG("%-25s| %-20d| %-20s|\n", "STK_PUSH", pstk->data[pstk->size], "");
     pstk->size++;
 
 #ifdef SECURE
@@ -137,8 +135,8 @@ int stackPop(stack *pstk, dataType *num)
 {    
     assert(pstk != NULL);
 
-    int errorNum = 0;
-    if (errorNum = stackVerificator(pstk))
+    int errorNum = stackVerificator(pstk);
+    if (errorNum)
         return errorNum;
 
     if (pstk->size == 0)
@@ -156,17 +154,21 @@ int stackPop(stack *pstk, dataType *num)
     *(pstk->hash) = hashFunc(pstk);
 #endif
 
-    LOG(msgNoArgs, ">> Number was popped", "STK_PUSH", "");
+    LOG(msgNoArgs, ">> Number was popped", "STK_POP", "");
     return stackVerificator(pstk);
 }
 
 int stackPrint(stack *pstk, int option)
 {
     assert(pstk != NULL);
-
-    FILE *fileName = pstk->logFile;
+    FILE *fileName = NULL;
+#ifdef DEBUG
+    fileName = pstk->logFile;
     if (option)
         fileName = stderr;
+#else
+    fileName = stderr;
+#endif
     
     int errorNum = 0;
     if (errorNum = stackVerificator(pstk))
@@ -183,6 +185,8 @@ int stackPrint(stack *pstk, int option)
     CANARYPRINT(*(pstk->leftCanaryPtr), *(pstk->rightCanaryPtr));
     HASHPRINT(*(pstk->hash));
 #endif
+
+    return 0;
 }
 
 int stk_realloc(stack *pstk, const int num)
@@ -324,12 +328,12 @@ int stackVerificator(const stack *pstk)
     return 0;
 }
 
-void stackFileLog(FILE *fileName, char *format, ...)
+void stackFileLog(FILE *fileName, const char *format, ...)
 {  
     va_list arg = {};   
 
     va_start(arg, format);
-    fprintf(fileName, format, arg);
+    vfprintf(fileName, format, arg);
     va_end(arg);
 
     fflush(fileName);

@@ -1,15 +1,13 @@
 #pragma once
 #include <stdio.h>
 
-#ifndef DEBUG
-    #define DEBUG
-#endif
 #define SECURE
 #define KILL 
 
 typedef int dataType;
 #define DATAPRINT(arg1, arg2) fprintf(fileName, "%d) %d\n", arg1, arg2)
 #define POISONPRINT(arg) fprintf(fileName, ">> Poison is: %X\n", arg)
+#define DATA_SPEC "%d%n"
 typedef long long int canary;
 #define CANARYPRINT(arg1, arg2) fprintf(fileName, ">> Canaries are %llX & %llX\n", arg1, arg2)
 typedef long long int hash_t;
@@ -73,4 +71,3 @@ int stackPush(stack *pstk, const dataType num);
 int stackPop(stack *pstk, dataType *num);
 int stackPrint(stack *pstk, int option);
 int stk_realloc(stack *stk, const int num);
-//void stackFileLog(FILE *fileName, char *format, ...); __attribute__ ((format(printf, 2, 3)));
