@@ -201,7 +201,7 @@ int stk_realloc(stack *pstk, const int num)
     if (num == UP)
     {
         pstk->capacity *= 2;
-        LOG(msgNoArgs, ">> Capacity has been doubled", "CAPACITY_UP", "");
+        LOG(msgNoArgs, ">> Capacity doubled", "CAPACITY_UP", "");
     }
     else if(num == DOWN)
     {
@@ -212,7 +212,7 @@ int stk_realloc(stack *pstk, const int num)
         }
         
         pstk->capacity /= 2;
-        LOG(msgNoArgs, ">> Capacity has been halfed", "CAPACITY_DOWN", "");
+        LOG(msgNoArgs, ">> Capacity halfed", "CAPACITY_DOWN", "");
     }
 #ifdef SECURE
     canary *temp = (canary *) \
@@ -243,6 +243,10 @@ int stk_realloc(stack *pstk, const int num)
     if (num == UP)
         if (poisonFunc(pstk))
         return PSN_ERR;
+    
+#ifdef SECURE
+    *(pstk->hash) = hashFunc(pstk);
+#endif
 
     return stackVerificator(pstk);
 }
