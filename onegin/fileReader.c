@@ -5,7 +5,6 @@
 #include "fileReader.h"
 #include <ctype.h>
 
-#define DEBUG
 #define FILE_SIZE "\n>>Size of file is: %d\n", size
 #define STRING_NUMBER ">>Number of strings is: %d\n\n", strs
 
@@ -48,7 +47,7 @@ void numberOfStrings(char* buffName, int* stringNumber)        //Подумат�
     *stringNumber = count;
 }
 
-int readToBuff(char *fileName, char **buffPtr, int *fileSize)
+int readToBuff(const char *fileName, char **buffPtr, int *fileSize)
 {
     FILE * file = fopen(fileName, "rb");              //Открываем файл, проверка на существование файла и его открытие
     if(file == NULL)
@@ -112,7 +111,7 @@ int buffToStrArr(char *buffName, char ***strArrPtr, int *stringNumber)
     return 0;
 }
 
-int fileRead(char *fileName, char** buffPtr, char ***strArrPtr, int *fileSize, int *stringNumber, int option)
+int fileRead(const char *fileName, char** buffPtr, char ***strArrPtr, int *fileSize, int *stringNumber, int option)
 {
     assert(fileName != NULL);
     assert(buffPtr != NULL || strArrPtr != NULL);
