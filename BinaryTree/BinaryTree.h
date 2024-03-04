@@ -10,8 +10,9 @@ typedef struct node
     struct node *right;
 } Node_t;
 
-int nodeInsert(Node_t *node, treeDataType data);
+Node_t *nodeInsert(Node_t *node, treeDataType data);
 int treePrint(Node_t *node);
 int treeIncrementPrint(Node_t *node);
 int treeKill(Node_t *node);
-
+Node_t *findNode(Node_t *nodePtr, const int num);
+void deleteNode(Node_t *treePtr, const treeDataType num);
