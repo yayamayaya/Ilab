@@ -16,15 +16,15 @@ void fileLog(FILE *logFileName, const char *format, ...)
 
 
 //Название логфайла передаётся последним в аргв
-FILE *openLogFile(const int argc, const char **argv, const char *StandardFileName, const char *format, ...)
+FILE *openLogFile(const int argNum, const char **argv, const char *StandardFileName, const char *format, ...)
 {
     assert(argv);
     assert(StandardFileName);
 
     FILE *logFile = NULL;
 
-    if (argv[argc - 1] != NULL)
-        logFile = fopen(argv[argc - 1], "w");
+    if (argv[argNum - 1] != NULL)
+        logFile = fopen(argv[argNum - 1], "w");
     else
         logFile = fopen(StandardFileName, "w");
     
@@ -38,6 +38,8 @@ FILE *openLogFile(const int argc, const char **argv, const char *StandardFileNam
     va_start(args, format);
     vfprintf(logFile, format, args);
     va_end(args);
+
+    fflush(logFile);
 
     return logFile;
 }
