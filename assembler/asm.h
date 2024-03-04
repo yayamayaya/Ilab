@@ -1,7 +1,9 @@
 #pragma once
 
-#define COMMANDS_NUM 20
+#define COMMANDS_NUM 19
 #define REGISTERS_NUM 4
+
+#define REGISTER_POSITION_AS_ARGUMENT 2
 
 typedef unsigned char byte_t;
 
@@ -14,55 +16,45 @@ enum ARGUMENT_TYPE
 
 enum ASM
 {
-    PUSH_GRP = 0,    
-    PUSH = 0x0B, //Число в стек
-    RPUSH = 0x0C,  //Число из регистра в стек
-    RAMPUSH = 0x0D,
+    PUSH_GRP        = 0x81,    
 
-    ARITHM_GRP = 0x10,
-    ADD = 0x11,   //Сложение
-    SUB = 0x12,   //Вычитание
-    MULT = 0x13,  //Умножение
-    DIV = 0x14, //Деление
+    ADD             = 0x02,     //Сложение
+    SUB             = 0x03,     //Вычитание
+    MULT            = 0x04,     //Умножение
+    DIV             = 0x05,     //Деление
 
-    POP_GRP = 0x20,
-    RPOP = 0x21,   //Число из стек в регистр   
-    RAMPOP = 0x22,
+    POP_GRP         = 0x82,
     
-    IN = 0x30,    //Ввод с консоли   
+    IN              = 0x06,     //Ввод с консоли   
 
-    MOV_GRP = 0x40,     //Команда mov
-    RAM_FRST = 0b1000,   
-    REG_FRST = 0b0100,
-    NUM_SCND = 0b0011,
-    RAM_SCND = 0b0010,
-    REG_SCND = 0b0001,
+    MOV_GRP         = 0x93,     //Команда mov
 
-    OUT = 0x50,   //Вывод
+    OUT             = 0x07,     //Вывод
 
-    HALT = 0x60,  //Завершение 
+    HALT            = 0x0F,     //Завершение 
 
-    GRAPHICS = 0x70,    
+    NOCMD           = 0xF0,
 
-    CALL = 0x80, //"Вызов"
+    //GRAPHICS        = ,    
 
-    JMP_GRP = 0x90,
-    JMP = 0x91,    //Переход на какую то позицию
-    JB = 0x92,    //Условные переходы
-    JBE = 0x93,
-    JA = 0x94,
-    JAE = 0x95,
-    JE = 0x96,
-    JNE = 0x97,
+    CALL            = 0x84,     //"Вызов"
+    
+    JMP             = 0x86,     //Переход на какую то позицию
+    JB              = 0x87,     //Условные переходы
+    JBE             = 0x88,
+    JA              = 0x89,
+    JAE             = 0x8A,
+    JE              = 0x8B,
+    JNE             = 0x8C,
 
-    RET = 0xA0,   //Возвращение
+    RET             = 0x09,     //Возвращение
 
-    NOCMD = 0xF0,
-    //Регистры:
-    AX = 1,
-    BX = 2,
-    CX = 3,
-    DX = 4
+    //Коды аргументов(4 бита):
+    NUM_ARG         = 0b0001,
+    REG_ARG         = 0b0010,
+    RAM_ARG         = 0b0100,
+    RAMREG_ARG      = 0b0110,
+    REGNUM_ARG      = 0b0011,
 };
 
 enum numberTypes
@@ -82,6 +74,7 @@ enum asmDebug
     FILEOPEN_ERR,
     FATAL_ERR,
     COMP_ERR = 404,
+    NOLABEL = 0xF0
 };
 
 typedef struct
@@ -91,7 +84,7 @@ typedef struct
 } cmd;
 
 cmd commands[COMMANDS_NUM] = {
-{"push", PUSH},
+{"push", PUSH_GRP},
 {"add", ADD},
 {"sub", SUB},
 {"mult", MULT},
@@ -100,7 +93,7 @@ cmd commands[COMMANDS_NUM] = {
 {"out", OUT},
 {"halt", HALT},
 {"in", IN},
-{"pop", RPOP},
+{"pop", POP_GRP},
 {"jmp", JMP},
 {"jb", JB},
 {"jbe", JBE},
@@ -110,12 +103,25 @@ cmd commands[COMMANDS_NUM] = {
 {"jne", JNE},
 {"call", CALL},
 {"mov", MOV_GRP},
-{"graph", GRAPHICS}
+//{"graph", GRAPHICS}
 };
 
-cmd registers[REGISTERS_NUM] = {
+/*cmd registers[REGISTERS_NUM] = {
 {"ax", AX},
 {"bx", BX},
 {"cx", CX},
 {"dx", DX}
-};
+};*/
+
+/*
+Обработка аргументов:
+
+push [rax] 0000 0110
+push [rax + 5] 0000 0111        [rax\0+\05]
+push [5] 0000 0101
+push rax 0000 0100
+push 5 0000 0001
+
+
+mov [rax + 5],[bax + 1] 0101 1111 0101 0111
+*/

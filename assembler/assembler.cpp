@@ -5,13 +5,14 @@
 #include <assert.h>
 #include <stdarg.h>
 #include <time.h>
+#include <stdint.h>
 #include "fileRead.h"
 #include "../stack/stack.h"
 #include "asm.h"
-#include "log.h"
+#include "../common/log.h"
 
 #ifdef DEBUG
-    #define LOG(...) fileLog(__VA_ARGS__)
+    #define LOG(...) fileLog(logFile, __VA_ARGS__)
     #define LOG_FCLOSE() fclose(logFile)
 #else
     #define LOG(...)
@@ -48,7 +49,7 @@ typedef struct
 
 typedef struct
 {
-    char *bytecodeHolder;
+    uint8_t *bytecodeHolder;
     int bytecodeHolderSize;
     int ip;
 } bytecode_t;
@@ -59,18 +60,15 @@ typedef struct
     int tokenNumber;
 } tokens_t;
 
-//Написать статик
-static void *reallocUp(void *array, int arrSize, int dataSize);
+static void *reallocUp(void *arrName, int *arrSize, int dataSize);
+static enum ASM cmdDet(const cmd *commands, const int commandsNumber, const char *token);
+static int argumentParsing(char *argToken, bytecode_t *bytecode);
 
-static enum ASM cmddet(const cmd *commands, const int commandsNumber, const char *word);
-static int argDet(char *argToken, int *argHolder);
-
+static int argInArr(char *argToken, bytecode_t *bytecode);
 static void cmdInArr(const byte_t cmdNum, bytecode_t *bytecode);
-static void numInArr(bytecode_t *bytecode, void *numberPointer, const int sizeOfNumber);
-static void regInArr(const char *registerToken, bytecode_t *bytecode);
+static void numInArr(void *numberPointer, const int sizeOfNumber, bytecode_t *bytecode);
 
-static int casePush(char *argToken, bytecode_t *bytecode);
-static int casePop(char *argToken, bytecode_t *bytecode);
+static int caseOneArgument(char *argToken, int commandGroup, bytecode_t *bytecode);
 static int caseMov(char **argPtr, bytecode_t *bytecode);
 
 static int Compiler(const tokens_t *tokens, bytecode_t *bytecode, labelTable_t *labels);
@@ -79,30 +77,23 @@ static int labeldet(const labelTable_t *labels, const char *token);
 static int labelInsert(labelTable_t *labels, char *labelName, const int ip);
 static void labelTablePrint(const labelTable_t *labels);
 
+
 #define MEM_FREE()                              \
     free(bytecode.bytecodeHolder);              \
     free(*tokens.tokenArr);                     \
     free(tokens.tokenArr);                      \
     free(labels.labelArr);                      \
     LOG_FCLOSE()
-
+    
 int main(const int argc, const char* argv[])
 {
     assert(argc >= 3);
 
-    #ifdef DEBUG
-        if (argc == 4)
-            logFile = fopen(argv[3], "w");
-        else
-            logFile = fopen("logFile.log", "w");
-        
-        if (logFile == NULL)
-        {
-            fprintf(stderr, "Can't open logFile.");
-            return FILENULL_ERR;
-        }
-        LOG("%-25s| %-17s| %-20s| %-20s|\n\n", "INSTRUCT. NAME", "ARGUMENTS", "INSTRUCT. POINTER", "ERROR");
-    #endif
+#ifdef DEBUG
+    logFile = openLogFile(argc, argv, "logFile.log", "%-25s| %-17s| %-20s| %-20s|\n\n", "INSTRUCT. NAME", "ARGUMENTS", "INSTRUCT. POINTER", "ERROR");
+    if (!logFile)
+        return FILENULL_ERR;
+#endif
 
     if (argv[1] == NULL)
     {
@@ -110,24 +101,18 @@ int main(const int argc, const char* argv[])
         return FILEREAD_ERR;
     }
 
-    bytecode_t bytecode = {(char *)calloc(100, sizeof(char)), 100, 0};
+    bytecode_t bytecode = {(uint8_t *)calloc(100, sizeof(char)), 100, 0};
     labelTable_t labels = {(label_t *)calloc(10, sizeof(label_t)), 10, 0};
     tokens_t tokens = {0};
 
-    if (bytecode.bytecodeHolder == NULL)
+    if (bytecode.bytecodeHolder == NULL || labels.labelArr == NULL)
     {
         LOG(msgZeroArgs, "MEM_ALC_ERR", "", 0, "[error]");
+        free(bytecode.bytecodeHolder);
         free(labels.labelArr);
         LOG_FCLOSE();
         return MEM_ALC_ERR;
-    }   
-    if (labels.labelArr == NULL)
-    {
-        LOG(msgZeroArgs, "MEM_ALC_ERR", "", 0, "[error]");        
-        free(bytecode.bytecodeHolder);
-        LOG_FCLOSE();
-        return MEM_ALC_ERR;
-    }
+    }  
 
     fileRead(argv[1], &tokens.tokenArr, &tokens.tokenNumber);
     if (tokens.tokenArr == NULL)
@@ -137,9 +122,12 @@ int main(const int argc, const char* argv[])
         return FILEREAD_ERR;
     }
     LOG(msgZeroArgs, "FILEREAD_OK", "", 0, "");
+    
+    int error = Compiler(&tokens, &bytecode, &labels);
 
-    if(Compiler(&tokens, &bytecode, &labels))
+    if(error)
     {
+        fprintf(stderr, ">>errorNum = %d", error);
         fprintf(stderr, ">>Compilation's not successfull, please check your syntax and code errors.\n");
         MEM_FREE();
         return COMP_ERR;
@@ -148,14 +136,15 @@ int main(const int argc, const char* argv[])
     if (labels.labelCounter != 0)
     { 
         bytecode.ip = 0;
-        if(Compiler(&tokens, &bytecode, &labels))
+        error = Compiler(&tokens, &bytecode, &labels);
+        if(error)
         {
+            fprintf(stderr, ">>errorNum = %d", error);
             fprintf(stderr, ">>Compilation's not successfull, please check your syntax and code errors.\n");
             MEM_FREE();
             return COMP_ERR;
         }
     }
-        
     
     FILE * byteCode = fopen(argv[2], "wb");
     if (byteCode == NULL)
@@ -165,7 +154,7 @@ int main(const int argc, const char* argv[])
         return FILEOPEN_ERR;
     }
 
-    if(fwrite(bytecode.bytecodeHolder, (int)sizeof(char), bytecode.ip, byteCode) < bytecode.ip)
+    if(fwrite(bytecode.bytecodeHolder, sizeof(char), bytecode.ip, byteCode) != bytecode.ip)
     {
         LOG(msgZeroArgs, "BYTECODE_WRITE_ERR", "", 0, "[error]");
         MEM_FREE();
@@ -175,14 +164,14 @@ int main(const int argc, const char* argv[])
     
     fclose(byteCode);
     LOG(msgOneArgD, "COMP_TIME", clock(), bytecode.ip, "");
-    MEM_FREE();
+    MEM_FREE();     //Разделить на goto или через структуру
 
     return 0;
 }
 
 #undef MEM_FREE
 
-void *reallocUp(void *arrName, int *arrSize, int dataSize)       //Реаллокация
+void *reallocUp(void *arrName, int *arrSize, int dataSize)
 {
     assert(arrName != NULL);
     assert(arrSize != 0);
@@ -200,10 +189,10 @@ void *reallocUp(void *arrName, int *arrSize, int dataSize)       //Реалло�
     return newArrPointer;
 }
 
-//--------------------------------------------Функции определения команд-------------------------------------------------------------
-
-enum ASM cmddet(const cmd *commands, const int commandsNumber, const char *token)       //Определение команды
+enum ASM cmdDet(const cmd *commands, const int commandsNumber, const char *token)
 {
+    assert(token);
+
     for (int pos = 0; pos < commandsNumber; pos++)
         if (strcmp(commands[pos].commandName, token) == 0)
             return commands[pos].commandNum;
@@ -211,42 +200,85 @@ enum ASM cmddet(const cmd *commands, const int commandsNumber, const char *token
     return NOCMD;
 }
 
-int argDet(char *argToken, int *argHolder)          //Определение типа аргумента
+int argumentParsing(char *argToken, bytecode_t *bytecode)
 {
-    assert(argToken != NULL);
-    assert(argHolder != NULL);
+    assert(bytecode);
+    assert(argToken);
 
-    if (sscanf(argToken, "%d", argHolder))
-        return ARG_NUMBER;
+    char regHolder = 0;
+    int dataHolder = 0;
+    int intHolder = 0;
+    int n = 0;
 
-    //else if (sscanf(argToken, "[%d]%n", argHolder, &charRead) == 2)
-    else if (strchr(argToken, '[') != NULL && sscanf(argToken + 1, "%d", argHolder))        //Указать спецификаторы для аргументов
-        if (strchr(argToken, ']') == NULL)
-        {
-            LOG(msgZeroArgs, "SYNTAX_ERR", "", 0, "[error]");
-            return ARG_DET_ERR;
-        }
-        else
-            return ARG_RAM;
-
-    else if (strchr(argToken, 'x') != NULL)
-        return ARG_REGISTER;
-
+    sscanf(argToken, "%cx+%d%n", &regHolder, &intHolder, &n);
+    if (n)
+    {
+        cmdInArr(regHolder - 'a', bytecode);
+        numInArr(&intHolder, sizeof(int), bytecode);
+        return REGNUM_ARG;
+    }
+    sscanf(argToken, "%cx%n", &regHolder, &n);
+    if (n)
+    {
+        assert('a' <= regHolder && regHolder <= 'd');
+        cmdInArr(regHolder - 'a', bytecode);
+        return REG_ARG;
+    }
+    sscanf(argToken, DATA_SPEC, &dataHolder, &n);
+    if (n)
+    {
+        numInArr(&dataHolder, sizeof(dataType), bytecode);
+        return NUM_ARG;
+    }
     
-    return ARG_DET_ERR;
-}
+    LOG(msgZeroArgs, "FATAL_ERROR", "", bytecode->ip, "[error]");
+    return FATAL_ERR;  
+} 
 
 //--------------------------------------------Функции записи команд-------------------------------------------------------------
 
-void cmdInArr(const byte_t cmdNum, bytecode_t *bytecode)        //Команда в массив
+int argInArr(char *argToken, bytecode_t *bytecode)
 {
+    assert(argToken != NULL); 
+    assert(bytecode != NULL);
+
+    int ramMask = 0;
+    int argMask = 0;
+    
+    int len = strlen(argToken) - 1;
+    if (len < 0)
+        len = 0;
+
+    if (*argToken == '[' && argToken[len] == ']')
+    {
+        argToken++;
+        argToken[len] = '\0';
+
+        ramMask = RAM_ARG;
+    }
+
+    argMask = argumentParsing(argToken, bytecode);
+    if (argMask == FATAL_ERR)
+    {
+        LOG(msgZeroArgs, "FATAL_ERROR", "", bytecode->ip, "[error]");
+        return FATAL_ERR;
+    }
+        
+    return ramMask | argMask;   
+}
+
+
+void cmdInArr(const byte_t cmdNum, bytecode_t *bytecode)
+{
+    assert(bytecode);
+
     bytecode->bytecodeHolder[bytecode->ip] = cmdNum;
     LOG(msgOneArgX, "CMD_PUSHED_IN_BYTECODE", cmdNum, bytecode->ip, "");
 
     bytecode->ip++;
 }
 
-void numInArr(bytecode_t *bytecode, void *numberPointer, const int sizeOfNumber)        //Число в массив
+void numInArr(void *numberPointer, const int sizeOfNumber, bytecode_t *bytecode)
 {
     assert(bytecode != NULL);
     assert(numberPointer != NULL);
@@ -256,183 +288,94 @@ void numInArr(bytecode_t *bytecode, void *numberPointer, const int sizeOfNumber)
     bytecode->ip += sizeOfNumber;
 }
 
-void regInArr(const char *registerToken, bytecode_t *bytecode)      //Регистр в массив
-{
-    assert(bytecode != NULL);
-    assert(registerToken != NULL);
-
-    int regNum = cmddet(registers, REGISTERS_NUM, registerToken);
-    if (regNum & NOCMD)
-        LOG(msgZeroArgs, "REGISTER_NOT_FOUND", "", bytecode->ip, "");
-    
-    cmdInArr(regNum, bytecode);  
-}
-
 //--------------------------------------------Функции для основных групп команд-----------------------------------------
 
-int casePush(char *argToken, bytecode_t *bytecode)      //Команды пуш
+int caseOneArgument(char *argToken, int commandGroup, bytecode_t *bytecode)
 {
     assert(argToken != NULL);
     assert(bytecode != NULL);
 
-    int num = 0;
+    uint16_t *commandPointer = (uint16_t *)(bytecode->bytecodeHolder + bytecode->ip);
+    bytecode->ip += sizeof(uint16_t);
 
-    switch (argDet(argToken, &num))
-    {
-    case ARG_NUMBER:
-        cmdInArr(PUSH, bytecode);        
-        numInArr( bytecode, &num, sizeof(dataType));
-        break;
-
-    case ARG_RAM:
-        cmdInArr(RAMPUSH, bytecode);
-        numInArr(bytecode, &num, sizeof(int));
-        break;
-
-    case ARG_REGISTER:
-        cmdInArr(RPUSH, bytecode);
-        regInArr(argToken, bytecode);
-        break;
-
-    case ARG_DET_ERR:
-        LOG(msgZeroArgs, "ARGUMENT_DET_ERR", "", bytecode->ip, "[error]");
-        return ARG_DET_ERR;
-        break;
-
-    default:
-        printf("<%d>", argDet(argToken, &num));
-        LOG(msgZeroArgs, "FATAL_ERROR", "", bytecode->ip, "[error]");
+    int argMask = argInArr(argToken, bytecode);
+    if (argMask == FATAL_ERR)
         return FATAL_ERR;
-    }
+
+    *commandPointer = commandGroup | (argMask << 8);
 
     return 0;
 }
 
-int casePop(char *argToken, bytecode_t *bytecode)       //Команды поп
-{
-    assert(argToken != NULL);
-    assert(bytecode != NULL);
-
-    int num = 0;
-
-    switch (argDet(argToken, &num))
-    {
-    case ARG_RAM:
-        cmdInArr(RAMPOP, bytecode);
-        numInArr(bytecode, &num, sizeof(int));
-        break;
-    case ARG_REGISTER:
-        cmdInArr(RPOP, bytecode);
-        regInArr(argToken, bytecode);
-        break;
-    case ARG_DET_ERR:
-        LOG(msgZeroArgs, "ARGUMENT_DET_ERR", "", bytecode->ip, "[error]");
-        return ARG_DET_ERR;
-        break;
-    default:
-        LOG(msgZeroArgs, "FATAL_ERROR", "", bytecode->ip, "[error]");
-        return FATAL_ERR;
-    }
-
-    return 0;
-}
-
-int caseMov(char **argPtr, bytecode_t *bytecode)     //Команды мов
+int caseMov(char **argPtr, bytecode_t *bytecode)    
 {
     assert(argPtr != NULL);
     assert(bytecode != NULL);
 
-    int cmdNum = MOV_GRP;
-    char *commandPtr = bytecode->bytecodeHolder + bytecode->ip;
-    (bytecode->ip)++;
+    uint16_t *commandPointer = (uint16_t *)(bytecode->bytecodeHolder + bytecode->ip);
+    bytecode->ip += sizeof(uint16_t);
 
-    int num = 0;
-
-    switch (argDet(*argPtr, &num))
+    int argMask1 = argInArr(*argPtr, bytecode);
+    if (argMask1 == FATAL_ERR)
     {
-    case 2:
-        cmdNum |= RAM_FRST;
-        numInArr(bytecode, &num, sizeof(int));
-        break;
-    case 3:
-        cmdNum |= REG_FRST;
-        regInArr(*argPtr, bytecode);
-        break;
-    case ARG_DET_ERR:
-        LOG(msgZeroArgs, "ARGUMENT_DET_ERR", "", bytecode->ip, "[error]");
-        return ARG_DET_ERR;
-        break;
-    default:
+        LOG(msgZeroArgs, "FATAL_ERROR", "", bytecode->ip, "[error]");
+        return FATAL_ERR;
+    }
+    else if (argMask1 == NUM_ARG)
+    {
+        LOG(msgZeroArgs, "MOV_WRONG_ARG", "", bytecode->ip, "[error]");
+        return FATAL_ERR;
+    }
+
+    int argMask2 = argInArr(*(argPtr + 1), bytecode);
+    if (argMask2 == FATAL_ERR)
+    {
         LOG(msgZeroArgs, "FATAL_ERROR", "", bytecode->ip, "[error]");
         return FATAL_ERR;
     }
 
-    switch (argDet(*(argPtr + 1), &num))
-    {
-    case 1:
-        cmdNum |= 0x03;
-        numInArr(bytecode, &num, sizeof(dataType));
-        break;
-    case 2:
-        cmdNum |= 0x02;
-        numInArr(bytecode, &num, sizeof(int));
-        break;
-    case 3:
-        cmdNum |= 0x01;
-        regInArr(*(argPtr + 1), bytecode);
-        break;
-    case ARG_DET_ERR:
-        LOG(msgZeroArgs, "ARGUMENT_DET_ERR", "", bytecode->ip, "[error]");
-        return ARG_DET_ERR;
-        break;
-    default:
-        LOG(msgZeroArgs, "FATAL_ERROR", "", bytecode->ip, "[error]");
-        return FATAL_ERR;
-    }
+    *commandPointer = (MOV_GRP) | ((argMask1 << 4 | argMask2) << 8);
 
-    *commandPtr = cmdNum;
     return 0;
 }
 
 //---------------------------------------------------Компилятор---------------------------------------------------------------
 
-int Compiler(const tokens_t *tokens, bytecode_t *bytecode, labelTable_t *labels)  //Передаём в компилятоор 3 основных аргумента: метки, токены, байткод
+int Compiler(const tokens_t *tokens, bytecode_t *bytecode, labelTable_t *labels) 
 {
     assert(tokens != NULL);
     assert(bytecode != NULL);
     assert(labels != NULL);
 
-    for (int tokenNum = 0; tokenNum < tokens->tokenNumber; tokenNum++)       //Компиляция
+    for (int tokenNum = 0; tokenNum < tokens->tokenNumber; tokenNum++)
     {
         int labelIP = 0;
+        uint16_t jmpCmd = 0;
 
-        if(*tokens->tokenArr[tokenNum] == ';')      //Комментарии
+        if(*tokens->tokenArr[tokenNum] == ';')    
             continue;
         
         char *colonPointer = NULL;
-        if ((colonPointer = strchr(tokens->tokenArr[tokenNum], ':')) != NULL)  //Ищем метку, вставляем в таблицу
+        if ((colonPointer = strchr(tokens->tokenArr[tokenNum], ':')) != NULL) 
         {
             *colonPointer = '\0';
             labelInsert(labels, tokens->tokenArr[tokenNum], bytecode->ip);
+            continue;
         }
-        if (labelIP = labeldet(labels, tokens->tokenArr[tokenNum]))      //Ищем уже считанную метку, чтобы компилятор не выдал ошибки
+        labelIP = labeldet(labels, tokens->tokenArr[tokenNum]);
+        if (labelIP) 
                 continue;
 
         if (bytecode->ip >= bytecode->bytecodeHolderSize - 5 * (int)sizeof(long long int))
-            bytecode->bytecodeHolder = (char *)reallocUp(bytecode->bytecodeHolder, &bytecode->bytecodeHolderSize, sizeof(char));
+            bytecode->bytecodeHolder = (uint8_t *)reallocUp(bytecode->bytecodeHolder, &bytecode->bytecodeHolderSize, sizeof(char));
         
-        byte_t cmdNum = cmddet(commands, COMMANDS_NUM, tokens->tokenArr[tokenNum]);   //Ищем команду
-        byte_t mask = cmdNum & 0xF0;               //Ставим маску
-        //Делаем свитч
+        byte_t cmdNum = cmdDet(commands, COMMANDS_NUM, tokens->tokenArr[tokenNum]);  
         
-        switch (mask)
+        switch (cmdNum)
         {
         case PUSH_GRP:
-            ERROR_CHECK(casePush(tokens->tokenArr[++tokenNum], bytecode));
-            break;
-
         case POP_GRP:
-            ERROR_CHECK(casePop(tokens->tokenArr[++tokenNum], bytecode));
+            ERROR_CHECK(caseOneArgument(tokens->tokenArr[++tokenNum], cmdNum, bytecode));
             break;
 
         case MOV_GRP:
@@ -449,11 +392,19 @@ int Compiler(const tokens_t *tokens, bytecode_t *bytecode, labelTable_t *labels)
             break;*/
 
         case CALL:
-        case JMP_GRP:
-            cmdInArr(cmdNum, bytecode);
-            ++tokenNum;
+        case JMP:
+        case JB:
+        case JBE:
+        case JA:
+        case JAE:
+        case JE:
+        case JNE:
+            tokenNum++;        
+            jmpCmd = cmdNum | (NUM_ARG << 8);
+            numInArr(&jmpCmd, (int)sizeof(uint16_t), bytecode);
             labelIP = labeldet(labels, tokens->tokenArr[tokenNum]);
-            numInArr(bytecode, &labelIP, sizeof(int));
+            numInArr(&labelIP, (int)sizeof(int), bytecode);
+
             break;
 
         case NOCMD:
@@ -461,7 +412,10 @@ int Compiler(const tokens_t *tokens, bytecode_t *bytecode, labelTable_t *labels)
             return COMP_ERR;
             break;
 
-        case ARITHM_GRP:
+        case ADD:
+        case SUB:
+        case MULT:
+        case DIV:
         case IN:
         case OUT:
         case HALT:
@@ -486,7 +440,7 @@ int labeldet(const labelTable_t *labels, const char *token)
     assert(labels != NULL);
     assert(token != NULL);
 
-    for (size_t pos = 0; pos < labels->labelCounter; pos++)
+    for (int pos = 0; pos < labels->labelCounter; pos++)
     {
         assert(labels->labelArr[pos].name);
 
@@ -523,20 +477,7 @@ void labelTablePrint(const labelTable_t *labels)
 
     printf(">> Table size: %d\n", labels->labelTableSize);
     printf(">>Number of labels: %d\n", labels->labelCounter);
-    for (size_t i = 0; i < labels->labelCounter; i++)
+    for (int i = 0; i < labels->labelCounter; i++)
         printf(">> [%d] Label Name: %s, label address: %d\n", i, labels->labelArr[i].name, labels->labelArr[i].ip);
     printf("Table ended.\n");
-}
-
-void fileLog(const char *format, ...)
-{
-    //fprintf(stderr, "format = '%s'", format);
-    assert(logFile != NULL);
-
-    va_list arg = {};
-    va_start(arg, format);
-    vfprintf(logFile, format, arg);
-    va_end(arg);
-
-    fflush(logFile);
 }
