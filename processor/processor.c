@@ -7,39 +7,36 @@
 #include "../assembler/asm.h"
 #include "../onegin/fileReader.h"
 #include "processor.h"
+#include "../common/log.h"
 
 #define SIZE_OF_RAM 256
 
-#define DEBUG
-
 #ifdef DEBUG
-#define ERRLOG(arg, ...)       \
-    fileLog(__VA_ARGS__);      \
+#define ERRLOGRET(arg, ...)         \
+    fileLog(__VA_ARGS__);           \
     return arg
 #else
-#define ERRLOG(arg, ...)    return arg
+#define ERRLOGRET(arg, ...)    return arg
 #endif
 
 #define ARITHM(arg)                                                                     \
     do {                                                                                \
         if (stackPush(stackName, temp1 arg temp2))                                      \
         {                                                                               \
-            ERRLOG(ARITHM_GRP_ERR, msgZeroArgs, "ARITHM_GRP_ERR", "", 0, "[error]");    \
-            stackPrint(stackName, IN_CONSOLE);                               \
+            ERRLOGRET(ARITHM_GRP_ERR, msgZeroArgs, "ARITHM_GRP_ERR", "", 0, "[error]"); \
+            stackPrint(stackName, IN_CONSOLE);                                          \
         }                                                                               \
     } while(0)  
 
-#define COMPARE(arg)                \
-    do                              \
-    {                               \
-        if (temp2 arg temp1)        \
-        {                           \
-            jmp(bytecode);          \
-            return 0;               \
-        }                           \
+#define COMPARE(arg)                    \
+    do                                  \
+    {                                   \
+        if (temp1 arg temp2)            \
+        {                               \
+            bytecode->ip = address;     \
+            return 0;                   \
+        }                               \
     } while (0)
-
-    
 
 
 const char *msgZeroArgs = "%-25s| %-17s| %-20d| %-20s|\n";
@@ -50,7 +47,7 @@ typedef struct
 {
     stack Stack;
     stack returnPtrs;
-    char RAM[SIZE_OF_RAM];
+    dataType RAM[SIZE_OF_RAM];
     dataType Register[REGISTERS_NUM];
 } processor_t;
 
@@ -58,52 +55,39 @@ typedef struct
 {
     char *bytecode;
     int bytecodeSize;
-    int ip;
+    dataType ip;
 } bytecode_t;
 
 FILE *logFile = NULL;
 
 int arithmetics(stack *stackName, const int lowerMask);
-void jmp(bytecode_t *bytecode);
-int caseJMP(stack *stackName, bytecode_t *bytecode, const int cmd);
-int caseMov(processor_t *SPU, bytecode_t *bytecode);
-int graphics(processor_t *SPU, const char * bytecode, int *ip);
+int caseJMP(stack *stackName, bytecode_t *bytecode, const int cmd, const int address);
 void fileLog(const char *format, ...);
 char *getCmd(const bytecode_t *bytecode, const signed int skipNum);
-int ipInc(bytecode_t *bytecode, const unsigned int incNum);
+int ipInc(bytecode_t *bytecode, const dataType incNum);
 void fileLog(const char *format, ...);
 int doCommand(processor_t *processor, bytecode_t *bytecode);
+char *getCmdAndInc(bytecode_t *bytecode, const int numSize);
+void takeOneArgument(processor_t *SPU, bytecode_t *bytecode, uint8_t argFlags, dataType **argument);
 
-int main(int argc, char** argv)
+
+int main(const int argc, const char** argv)
 {
     assert(argc >= 2);
     bytecode_t bytecode = {0};
 
     fileRead(argv[1], &bytecode.bytecode, NULL, &bytecode.bytecodeSize, NULL, BUFF_ONLY);
 
-    char *log1 = NULL;
-    char *log2 = NULL;
-
-    if (argc >= 3 && argv[2] != NULL)
-        log1 = argv[2];
-    else
-        log1 = "DataStack.log";
-
-    if (argc >= 4 && argv[3] != NULL)
-        log2 = argv[3];
-    else
-        log2 = "ReturnStack.log";
+    const char *log1 = NULL;
+    const char *log2 = NULL;
 
 #ifdef DEBUG
-    if (argc >= 5 && argv[4] != NULL)
-        logFile = fopen(argv[4], "w");
-    else
-        logFile = fopen("processorErrorLog.log", "w");    
+    logFile = openLogFile(3, argv, "processorErrorLog.log", "%-25s| %-17s| %-20s| %-20s|\n", "MESSAGE", "ARGUMENT", "IP", "ERROR");
 #endif
 
     processor_t processor = {0};
-    stackCtor(&processor.Stack, 10, log1);
-    stackCtor(&processor.returnPtrs, 5, log2);
+    stackCtor(&processor.Stack, 10, "dataStack.log");
+    stackCtor(&processor.returnPtrs, 5, "returnStack.log");
 
     int lessSignBitMask = 0;
     int errorNum = 0;
@@ -115,21 +99,23 @@ int main(int argc, char** argv)
     stackDtor(&processor.Stack);
     stackDtor(&processor.returnPtrs);
     free(bytecode.bytecode);
+#ifdef DEBUG
     fclose(logFile);
+#endif
 
     return errorNum;
 }
 
-int arithmetics(stack *stackName, const int command)
+int arithmetics(stack *stackName, const int cmd)
 {
     assert(stackName != NULL);
     dataType temp1 = 0;
     dataType temp2 = 0;
 
-    if (stackPop(stackName, &temp1) || stackPop(stackName, &temp2))
+    if (stackPop(stackName, &temp2) || stackPop(stackName, &temp1))
         return -1;
        
-    switch (command)
+    switch (cmd)
     {
     case ADD:
         ARITHM(+);
@@ -144,37 +130,30 @@ int arithmetics(stack *stackName, const int command)
         ARITHM(/);
         break;
     default:
-        ERRLOG(FATAL_ERR, msgZeroArgs, "FATAL_ERROR", "ARITHM_GRP", 0, "[error]");
+        ERRLOGRET(FATAL_ERR, msgZeroArgs, "FATAL_ERROR", "ARITHM_GRP", 0, "[error]");
         break;
     }
 
     return 0;
 }
 
-void jmp(bytecode_t *bytecode)
-{
-    assert(bytecode != NULL);
-    bytecode->ip = *(int *)(getCmd(bytecode, 0));
-}
-
-int caseJMP(stack *stackName, bytecode_t *bytecode, const int cmd)
+int caseJMP(stack *stackName, bytecode_t *bytecode, const int cmd, const int address)
 {
     assert(stackName != NULL);
     assert(bytecode != NULL);
-    int temp1 = 0;
-    int temp2 = 0;
+    dataType temp1 = 0;
+    dataType temp2 = 0;
 
     if (stackPop(stackName, &temp2) || stackPop(stackName, &temp1))
-        return 1;
+        return -1;
 
     if (stackPush(stackName, temp1))
-        {ERRLOG(RPUSH_CMD_FAIL, msgZeroArgs, "RPUSH_CMD_FAIL", "", bytecode->ip, "[error]");}
-    stackPush(stackName, temp2);
+        {ERRLOGRET(RPUSH_CMD_FAIL, msgZeroArgs, "RPUSH_CMD_FAIL", "", bytecode->ip, "[error]");}
 
     switch(cmd)
     {
     case JMP:
-        jmp(bytecode);
+        bytecode->ip = address;
         break;
     case JB:
         COMPARE(<);
@@ -195,177 +174,180 @@ int caseJMP(stack *stackName, bytecode_t *bytecode, const int cmd)
         COMPARE(!=);
         break;
     default:
-        ERRLOG(FATAL_ERROR, msgZeroArgs, "FATAL_ERROR", "", bytecode->ip, "[error]");
+        ERRLOGRET(FATAL_ERROR, msgZeroArgs, "FATAL_ERROR", "", bytecode->ip, "[error]");
         break;    
-    }
-    ipInc(bytecode, sizeof(int));
-}
-
-int caseMov(processor_t *SPU, bytecode_t *bytecode)
-{
-    switch (bytecode->bytecode[bytecode->ip - 1] & LESS_SIGN_MASK)
-    {
-
-    case REG_FRST | REG_SCND:
-        SPU->Register[*getCmd(bytecode, 0) - 1] = SPU->Register[*getCmd(bytecode, sizeof(char)) - 1];
-        ipInc(bytecode, sizeof(char) + sizeof(char));
-        break;
-
-    case REG_FRST | RAM_SCND:
-        SPU->Register[*getCmd(bytecode, 0) - 1] = *(dataType *)(SPU->RAM + *(int *)getCmd(bytecode, sizeof(char)));
-        ipInc(bytecode, sizeof(char) + sizeof(int));
-        break;
-
-    case REG_FRST | NUM_SCND:
-        SPU->Register[*getCmd(bytecode, 0) - 1] = *(dataType *)(getCmd(bytecode, sizeof(char)));
-        ipInc(bytecode, sizeof(char) + sizeof(dataType));
-        break;
-
-    case RAM_FRST | REG_FRST:
-        *(dataType *)(SPU->RAM + *(int *)(getCmd(bytecode, 0))) =  SPU->Register[*getCmd(bytecode, sizeof(int)) - 1];
-        ipInc(bytecode, sizeof(int) + sizeof(char));
-        break;
-
-    case RAM_FRST | RAM_SCND:
-        *(dataType *)(SPU->RAM + *(int *)(getCmd(bytecode, 0))) = *(dataType *)(SPU->RAM + *(int *)(getCmd(bytecode, sizeof(int))));
-        ipInc(bytecode, sizeof(int) + sizeof(int));
-        break;
-
-    case RAM_FRST | NUM_SCND:
-        *(dataType *)(SPU->RAM + *(int *)(getCmd(bytecode, 0))) = *(dataType *)(getCmd(bytecode, sizeof(int)));
-        ipInc(bytecode, sizeof(int) + sizeof(dataType));
-        break;
-
-    default:
-        ERRLOG(FATAL_ERROR, msgZeroArgs, "FATAL_ERROR", "", bytecode->ip, "[error]");
-        break;
     }
 
     return 0;
+}
+
+void takeOneArgument(processor_t *SPU, bytecode_t *bytecode, uint8_t argFlags, dataType **argument)
+{   
+    assert(SPU);
+    assert(bytecode);
+    assert(argument);
+
+    if (argFlags & 0b0001 && argFlags & 0b0010)
+    {
+
+        dataType regHolder = SPU->Register[*getCmdAndInc(bytecode, sizeof(uint8_t))];
+        fprintf(stderr, "case AX + NUM {%d}\n", bytecode->ip);
+        dataType cmdHolder = *(dataType *)getCmdAndInc(bytecode, sizeof(dataType));
+        fprintf(stderr, "cmdHolder = %d\n", cmdHolder);
+
+        fprintf(stderr, "argument = %p\n", argument);
+        fprintf(stderr, "*argument = %p\n", *argument);
+        fprintf(stderr, "**argument = %d\n", **argument);
+
+        **argument = regHolder + cmdHolder;
+        fprintf(stderr, "*argument = %d     {%d}\n", *argument, bytecode->ip);
+        fprintf(stderr, "**argument = %d     {%d}\n", **argument, bytecode->ip);        
+
+    }
+
+    else if (argFlags & 0b0001)
+        *argument = (dataType *)getCmdAndInc(bytecode, sizeof(dataType));
+
+    else if (argFlags & 0b0010)  
+        *argument = (dataType *)&SPU->Register[*getCmdAndInc(bytecode, sizeof(uint8_t))];
+
+    else
+        {ERRLOGRET(, msgZeroArgs, "ARG_TAKE_FAIL", "", bytecode->ip, "[error]");}
+
+    if (argFlags & 0b0100)
+        *argument = (dataType *)&SPU->RAM[(int)**argument];
+
+        return;
+
 }
 
 int doCommand(processor_t *processor, bytecode_t *bytecode)
 {
     assert(processor != NULL);
-    assert(bytecode != NULL);
-    char cmd = *getCmd(bytecode, 0);
-    ipInc(bytecode, sizeof(char));
+    assert(bytecode != NULL);    
 
-    int lessSignBitMask = cmd & LESS_SIGN_MASK;
-    int dataHolder = 0;
+    uint8_t cmd = *getCmdAndInc(bytecode, sizeof(uint8_t));
 
-    switch (cmd & MOST_SIGN_MASK)
+    static dataType valueHolder1 = 0;
+    static dataType valueHolder2 = 0;
+
+    dataType *argHolder1 = &valueHolder1;
+    dataType *argHolder2 = &valueHolder2;
+
+    if (cmd & 0x80)
+    {
+        uint8_t argFlags = *getCmdAndInc(bytecode, sizeof(uint8_t));
+        if (cmd & 0x10)
+        {
+            takeOneArgument(processor, bytecode, argFlags >> 4, &argHolder1);
+            takeOneArgument(processor, bytecode, argFlags, &argHolder2);
+        }
+        else
+            takeOneArgument(processor, bytecode, argFlags, &argHolder1);
+    }
+    /*if (argHolder1 != NULL)
+        fprintf(stderr, "argHolder1 = %d (%d)\n", *argHolder1, bytecode->ip);
+    
+    if (argHolder2 != NULL)
+        fprintf(stderr, "argHolder2 = %d (%d)\n", *argHolder2, bytecode->ip);*/
+
+    switch (cmd)
     {
     case PUSH_GRP:
-        switch (cmd)
-        {
-        case PUSH:
-            if (stackPush(&processor->Stack, *(dataType *)(getCmd(bytecode, 0))))
-                {ERRLOG(PUSH_CMD_FAIL, msgZeroArgs, "PUSH_CMD_FAIL", "", bytecode->ip, "[error]");}
-            ipInc(bytecode, sizeof(dataType));
-            break;
-
-        case RPUSH:
-            if (stackPush(&processor->Stack, processor->Register[*(char *)getCmd(bytecode, 0)] - 1))
-                {ERRLOG(RPUSH_CMD_FAIL, msgZeroArgs, "RPUSH_CMD_FAIL", "", bytecode->ip, "[error]");}
-            ipInc(bytecode, sizeof(char));
-            break;
-
-        case RAMPUSH:
-            if (stackPush(&processor->Stack, *(int *)(processor->RAM + *(int *)getCmd(bytecode, 0))))
-                {ERRLOG(RAMPUSH_CMD_FAIL, msgZeroArgs, "RAMPUSH_CMD_FAIL", "", bytecode->ip, "[error]");}
-            ipInc(bytecode, sizeof(int));
-            break;
-
-        default:
-            ERRLOG(FATAL_ERROR, msgZeroArgs, "FATAL_ERROR", "", bytecode->ip, "[error]");
-            break;
-        }
+        if (stackPush(&processor->Stack, *argHolder1))
+            {ERRLOGRET(PUSH_CMD_FAIL, msgZeroArgs, "PUSH_CMD_FAIL", "", bytecode->ip, "[error]");}
         break;
-
-    case ARITHM_GRP:
-        if (arithmetics(&processor->Stack, cmd))
-            {ERRLOG(ARITHM_CMD_FAIL, msgZeroArgs, "ARITHM_ERR", "", bytecode->ip, "[error]");}
-        break; 
-
+    
+    case ADD:
+    case SUB:
+    case MULT:
+    case DIV:
+        arithmetics(&processor->Stack, cmd);
+        break;
+    
     case POP_GRP:
-        switch (cmd)
-        {
-        case RPOP:
-            if (stackPop(&processor->Stack, processor->Register + *getCmd(bytecode, 0) - 1))
-                {ERRLOG(RPOP_CMD_FAIL, msgZeroArgs, "RPOP_CMD_FAIL", "", bytecode->ip, "[error]");}
-            ipInc(bytecode, 0);
-            break;
-
-        case RAMPOP:
-            if (stackPop(&processor->Stack, (dataType *)(processor->RAM + *(int *)getCmd(bytecode, 0))))
-                {ERRLOG(RAMPOP_CMD_FAIL, msgZeroArgs, "RAMPOP_CMD_FAIL", "", bytecode->ip, "[error]");}
-            ipInc(bytecode, sizeof(int));
-            break;
-
-        default:
-            ERRLOG(FATAL_ERROR, msgZeroArgs, "FATAL_ERROR", "", bytecode->ip, "[error]");
-            break;
-        }
+        if (stackPop(&processor->Stack, argHolder1))
+            {ERRLOGRET(RPOP_CMD_FAIL, msgZeroArgs, "RPOP_CMD_FAIL", "", bytecode->ip, "[error]");}
         break;
-        
+    
     case IN:
         printf("Enter the number:\n");
-        if(!scanf("%d", &dataHolder))
-            {ERRLOG(IN_CMD__SCAN_ERR, msgZeroArgs, "IN_CMD__SCAN_ERR", "", bytecode->ip, "[error]");}
+        if(!scanf("%d", argHolder1))
+            {ERRLOGRET(IN_CMD__SCAN_ERR, msgZeroArgs, "IN_CMD__SCAN_ERR", "", bytecode->ip, "[error]");}
 
-        if(stackPush(&processor->Stack, dataHolder))
-            {ERRLOG(IN_CMD__PUSH_FAIL, msgZeroArgs, "IN_CMD__PUSH_FAIL", "", bytecode->ip, "[error]");}
+        if(stackPush(&processor->Stack, *argHolder1))
+            {ERRLOGRET(IN_CMD__PUSH_FAIL, msgZeroArgs, "IN_CMD__PUSH_FAIL", "", bytecode->ip, "[error]");}
         break;
 
     case MOV_GRP:
-        if(caseMov(processor, bytecode))
-            {ERRLOG(MOV_CMD_FAIL, msgZeroArgs, "MOV_CMD_FAIL", "", bytecode->ip, "[error]");}
+        *argHolder1 = *argHolder2;
         break;
 
     case OUT:
+    {
+        dataType popData = 0;
+
         printf("\n>>>DATA DUMPING:\n");
-        while (stackPop(&processor->Stack, &dataHolder) != STK_EMPTY)    //пустой поп
-            printf(">>> %d\n", dataHolder);    
+        while (stackPop(&processor->Stack, &popData) != STK_EMPTY)    //пустой поп
+            printf(">>> %d\n", popData);    
         printf(">>> DUMP ENDED.\n");
-        break;   
-
+        break; 
+    }
+        
     case HALT:
-        ERRLOG(PROGRAMM_ENDED, msgZeroArgs, "PROGRAMM_ENDED", "", bytecode->ip, "");
-        return PROGRAMM_ENDED;
-        break;
-    
-    case CALL:
-        if (stackPush(&processor->returnPtrs, bytecode->ip + sizeof(int))) 
-            {ERRLOG(CALL_CMD__PUSH_FAIL, msgZeroArgs, "CALL_CMD__PUSH_FAIL", "", bytecode->ip, "[error]");}
-        jmp(bytecode);
+        ERRLOGRET(PROGRAMM_ENDED, msgZeroArgs, "PROGRAMM_ENDED", "", bytecode->ip, "");
         break;
 
-    case JMP_GRP:
-        caseJMP(&processor->Stack, bytecode, cmd);
-        break;   
+    case CALL:
+        if (stackPush(&processor->returnPtrs, bytecode->ip))
+            {ERRLOGRET(CALL_CMD__PUSH_FAIL, msgZeroArgs, "CALL_CMD__PUSH_FAIL", "", bytecode->ip, "[error]");}
+        //fprintf(stderr, "\n\n\n<<%d>>\n\n\n", *argHolder1);
+        bytecode->ip = *argHolder1;
+        break;
+
+    case JMP:
+    case JB:
+    case JBE:
+    case JA:
+    case JAE:
+    case JE:
+    case JNE:
+        caseJMP(&processor->Stack, bytecode, cmd, *argHolder1);
+        break;
 
     case RET:
         if (stackPop(&processor->returnPtrs, &bytecode->ip)) 
-            {ERRLOG(RET_CMD_FAIL, msgZeroArgs, "RET_CMD_FAIL", "", bytecode->ip, "[error]");}
+            {ERRLOGRET(RET_CMD_FAIL, msgZeroArgs, "RET_CMD_FAIL", "", bytecode->ip, "[error]");}
         break;
 
+
     default:
-        ERRLOG(FATAL_ERROR, msgZeroArgs, "FATAL_ERROR", "", bytecode->ip, "[error]");
+        fprintf(stderr, "ERROR_CMD = %d\n\n", cmd);
+        ERRLOGRET(FATAL_ERROR, msgZeroArgs, "FATAL_ERROR", "", bytecode->ip, "[error]");
         break;
     }
 
     return 0;
+}
+
+char *getCmdAndInc(bytecode_t *bytecode, const int numSize)
+{
+    assert(bytecode != NULL);
+    assert(numSize > 0);
+
+    char *Holder = getCmd(bytecode, 0);
+    ipInc(bytecode, numSize);
+    return Holder;
 }
 
 char *getCmd(const bytecode_t *bytecode, const signed int skipNum)
 {
     assert(bytecode != NULL);
 
-    return bytecode->bytecode + bytecode->ip + skipNum;
+    return bytecode->bytecode + (int)bytecode->ip + skipNum;
 }
 
-int ipInc(bytecode_t *bytecode, const unsigned int incNum)
+int ipInc(bytecode_t *bytecode, const dataType incNum)
 {
     assert(bytecode != NULL);
 
