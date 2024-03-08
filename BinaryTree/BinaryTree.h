@@ -8,11 +8,13 @@ typedef struct node
     treeDataType data;
     struct node *left;
     struct node *right;
-} Node_t;
+} node_t;
 
-Node_t *nodeInsert(Node_t *node, treeDataType data);
-int treePrint(Node_t *node);
-int treeIncrementPrint(Node_t *node);
-int treeKill(Node_t *node);
-Node_t *findNode(Node_t *nodePtr, const int num);
-void deleteNode(Node_t *treePtr, const treeDataType num);
+node_t *nodeInsert(node_t *node, treeDataType data);
+void treePrint(FILE *fileName, node_t *node);
+int treeIncrementPrint(FILE *fileName, node_t *node);
+int treeKill_static(node_t *node);
+int treeKill_string(node_t *node);
+//int treeKill(node_t *node);
+node_t *findNode(node_t *nodePtr, const int num);
+void deleteNode(node_t *treePtr, const treeDataType num);

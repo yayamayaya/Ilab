@@ -8,11 +8,11 @@ FILE *logFile = NULL;
 
 static void fileLog(const char *format, ...);
 
-Node_t *nodeInsert(Node_t *node, const treeDataType data)
+node_t *nodeInsert(node_t *node, const treeDataType data)
 {
     assert(node != NULL);
 
-    Node_t *tempNode = (Node_t *)calloc(1, sizeof(Node_t));
+    node_t *tempNode = (node_t *)calloc(1, sizeof(node_t));
     tempNode->data = data;
 
     while(1)
@@ -36,7 +36,7 @@ Node_t *nodeInsert(Node_t *node, const treeDataType data)
     return NULL;
 }
 
-Node_t *findNode(Node_t *treePtr, const treeDataType num)
+node_t *findNode(node_t *treePtr, const treeDataType num)
 {
     assert(treePtr);
 
@@ -57,7 +57,7 @@ Node_t *findNode(Node_t *treePtr, const treeDataType num)
     return NULL;
 }
 
-int deleteNodePtr(Node_t *treePtr, const Node_t *Ptr)
+int deleteNodePtr(node_t *treePtr, const node_t *Ptr)
 {
     assert(treePtr);
     assert(Ptr);
@@ -81,19 +81,19 @@ int deleteNodePtr(Node_t *treePtr, const Node_t *Ptr)
     return 1;
 }
 
-void deleteNode(Node_t *treePtr, const treeDataType num)
+void deleteNode(node_t *treePtr, const treeDataType num)
 {
     assert(treePtr);
 
-    Node_t *nodeToChange = findNode(treePtr, num);
+    node_t *nodeToChange = findNode(treePtr, num);
     if (!nodeToChange)
     {
         //LOG
         return;
     }
 
-    Node_t *killedNodeLeftT = nodeToChange->left;
-    Node_t *killedNodeRightT = nodeToChange->right;
+    node_t *killedNodeLeftT = nodeToChange->left;
+    node_t *killedNodeRightT = nodeToChange->right;
     
     if (killedNodeRightT == NULL && killedNodeLeftT == NULL)
     {
@@ -140,7 +140,7 @@ void deleteNode(Node_t *treePtr, const treeDataType num)
 
     free(killedNodeRightT);
 
-    Node_t *newNode = nodeInsert(treePtr, killedNodeLeftT->data);
+    node_t *newNode = nodeInsert(treePtr, killedNodeLeftT->data);
     if (!newNode)
     {
         //error
@@ -153,20 +153,28 @@ void deleteNode(Node_t *treePtr, const treeDataType num)
     return;    
 }
 
-int treePrint(Node_t *node)
+void treePrint(FILE *fileName, node_t *node)
 {
-    fprintf(stderr, "{%d", node->data);
+    if (node == NULL)
+        return;
+    
+
+    fprintf(fileName, "{%d", node->data);
     if (node->left != NULL)
-        treePrint(node->left);
+        treePrint(fileName, node->left);
+    else
+        fprintf(stderr, "{}");
     if (node->right != NULL)
-        treePrint(node->right);
+        treePrint(fileName, node->right);
+    else
+        fprintf(stderr, "{}");
 
-    fprintf(stderr, "}");
+    fprintf(fileName, "}");
 
-    return 0;
+    return;
 }
 
-int treeIncrementPrint(Node_t *node)
+/*int treeIncrementPrint(node_t *node)
 {
     assert(node != NULL);
 
@@ -179,17 +187,32 @@ int treeIncrementPrint(Node_t *node)
         treeIncrementPrint(node->right);
 
     return 0;
-}
+}*/
 
-int treeKill(Node_t *node)
+int treeKill_static(node_t *node)
 {
     assert(node != NULL);
 
     if (node->left != NULL)
-        treeKill(node->left);
+        treeKill_static(node->left);
     if (node->right != NULL)
-        treeKill(node->right);
+        treeKill_static(node->right);
 
+    free(node);
+
+    return 0;
+}
+
+int treeKill_string(node_t *node)
+{
+    assert(node != NULL);
+
+    if (node->left != NULL)
+        treeKill_string(node->left);
+    if (node->right != NULL)
+        treeKill_string(node->right);
+
+    //free(node->data);
     free(node);
 
     return 0;
