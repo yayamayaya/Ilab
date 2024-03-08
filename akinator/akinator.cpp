@@ -3,7 +3,9 @@
 #include <assert.h>
 #include "../common/log.h"
 #include "akinator.h"
+#include "../onegin/fileReader.h"
 #include "../BinaryTree/BinaryTree.h"
+#include "dataBaseRead.h"
 
 #ifdef DEBUG
 #define LOG(format, ...) fileLog(akLog, format, __VA_ARGS__)
@@ -30,15 +32,12 @@ int main(const int argc, const char *argv[])
 #endif
 
     //Происходит "чтение" файла
-    node_t *root = (node_t *)calloc(1, sizeof(node_t));
-    root->data = (char *)calloc(1, MAX_STRING_LENGTH);
-    if (!root->data || !root)
-    {
-        LOG(format, "MEM_ALC_ERR", 0, "[error]");
-        return MEM_ALC_ERR;
-    }
-    
-    sprintf(root->data, "Sanya");
+    char *buff = NULL;
+    int pos = 0;
+
+    readToBuff("../akinator/dataBase.txt", &buff, NULL);
+    node_t *root = readDataBase(buff, &pos);
+    free(buff);
     //Происходит акинация
     int akinMsg = 0;
     do
