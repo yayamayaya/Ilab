@@ -23,7 +23,7 @@ int poisonCheck(const stack *pstk);
 int canaryCheck(const stack *pstk);
 int hashCheck(const stack *pstk);
 int stackVerificator(const stack *pstk);
-void stackFileLog(FILE *fileName, const char *format, ...) __attribute__ ((format(fprintf, 2, 3)));;
+void stackFileLog(FILE *fileName, const char *format, ...) __attribute__ ((format(printf, 2, 3)));;
 
 const dataType poison = 0xDD;
 const canary Lcanary = 0xDEDDEAD;
