@@ -22,4 +22,17 @@ spurunval:
 
 
 treeTest-m:
-	g++ ../akinator/BinaryTree.cpp ../akinator/test.cpp -o Ttest
+	g++ ../BinaryTree/BinaryTree.cpp ../BinaryTree/test.cpp -o Ttest
+
+
+akin-main:
+	g++ ../akinator/akinator.cpp ../BinaryTree/BinaryTree.cpp -o akinator
+
+akinrun:
+	./akinator
+akinrunval:
+	valgrind ./akinator
+
+
+akin-dataRead:
+	g++ ../akinator/dataBaseRead.cpp ../onegin/fileReader.c ../BinaryTree/BinaryTree.cpp
