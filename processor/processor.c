@@ -191,18 +191,9 @@ void takeOneArgument(processor_t *SPU, bytecode_t *bytecode, uint8_t argFlags, d
     {
 
         dataType regHolder = SPU->Register[*getCmdAndInc(bytecode, sizeof(uint8_t))];
-        fprintf(stderr, "case AX + NUM {%d}\n", bytecode->ip);
         dataType cmdHolder = *(dataType *)getCmdAndInc(bytecode, sizeof(dataType));
-        fprintf(stderr, "cmdHolder = %d\n", cmdHolder);
-
-        fprintf(stderr, "argument = %p\n", argument);
-        fprintf(stderr, "*argument = %p\n", *argument);
-        fprintf(stderr, "**argument = %d\n", **argument);
 
         **argument = regHolder + cmdHolder;
-        fprintf(stderr, "*argument = %d     {%d}\n", *argument, bytecode->ip);
-        fprintf(stderr, "**argument = %d     {%d}\n", **argument, bytecode->ip);        
-
     }
 
     else if (argFlags & 0b0001)
