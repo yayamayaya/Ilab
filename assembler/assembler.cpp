@@ -90,7 +90,7 @@ int main(const int argc, const char* argv[])
     assert(argc >= 3);
 
 #ifdef DEBUG
-    logFile = openLogFile(argc, argv, "logFile.log", "%-25s| %-17s| %-20s| %-20s|\n\n", "INSTRUCT. NAME", "ARGUMENTS", "INSTRUCT. POINTER", "ERROR");
+    logFile = openLogFile(4, argv, "logFile.log", "%-25s| %-17s| %-20s| %-20s|\n\n", "INSTRUCT. NAME", "ARGUMENTS", "INSTRUCT. POINTER", "ERROR");
     if (!logFile)
         return FILENULL_ERR;
 #endif
