@@ -8,5 +8,5 @@ void Bsort(void* arrPoint, int arrSize, int typeSize, int (*Comparator)(const vo
     for (int pass = 0; pass < arrSize - 1; pass++)
         for (int i = 0; i < arrSize - pass - 1; i++)
             if (Comparator((uint8_t *)arrPoint + i * typeSize, (uint8_t *)arrPoint + (i + 1) * typeSize) > 0)  
-                SwapOpt(((uint8_t *)arrPoint + i * typeSize), ((uint8_t *)arrPoint + (i + 1) * typeSize), typeSize);         
+                SwapOpt(((uint8_t *)arrPoint + i * typeSize), ((uint8_t *)arrPoint + (i + 1) * typeSize), typeSize);
 }

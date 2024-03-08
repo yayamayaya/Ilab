@@ -159,15 +159,15 @@ void treePrint(FILE *fileName, node_t *node)
         return;
     
 
-    fprintf(fileName, "{%d", node->data);
+    fprintf(fileName, "{\"%s\"", node->data);
     if (node->left != NULL)
         treePrint(fileName, node->left);
     else
-        fprintf(stderr, "{}");
+        fprintf(fileName, "{}");
     if (node->right != NULL)
         treePrint(fileName, node->right);
     else
-        fprintf(stderr, "{}");
+        fprintf(fileName, "{}");
 
     fprintf(fileName, "}");
 
@@ -212,7 +212,7 @@ int treeKill_string(node_t *node)
     if (node->right != NULL)
         treeKill_string(node->right);
 
-    //free(node->data);
+    free(node->data);
     free(node);
 
     return 0;

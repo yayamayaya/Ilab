@@ -1,6 +1,6 @@
 #pragma once
 
-typedef int treeDataType;
+typedef char *treeDataType;
 #define TREE_DATA_SPEC 
 
 typedef struct node

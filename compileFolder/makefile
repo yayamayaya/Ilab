@@ -26,7 +26,7 @@ treeTest-m:
 
 
 akin-main:
-	g++ ../akinator/akinator.cpp ../BinaryTree/BinaryTree.cpp -o akinator
+	g++ ../akinator/akinator.cpp ../BinaryTree/BinaryTree.cpp ../akinator/dataBaseRead.cpp ../onegin/fileReader.c -o akinator
 
 akinrun:
 	./akinator
