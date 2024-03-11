@@ -206,7 +206,7 @@ int argumentParsing(char *argToken, bytecode_t *bytecode)
     assert(argToken);
 
     char regHolder = 0;
-    int dataHolder = 0;
+    dataType dataHolder = 0;
     int intHolder = 0;
     int n = 0;
 
@@ -400,7 +400,7 @@ int Compiler(const tokens_t *tokens, bytecode_t *bytecode, labelTable_t *labels)
         case JE:
         case JNE:
             tokenNum++;        
-            jmpCmd = cmdNum | (NUM_ARG << 8);
+            jmpCmd = cmdNum | (ADR_ARG << 8);
             numInArr(&jmpCmd, (int)sizeof(uint16_t), bytecode);
             labelIP = labeldet(labels, tokens->tokenArr[tokenNum]);
             numInArr(&labelIP, (int)sizeof(int), bytecode);
