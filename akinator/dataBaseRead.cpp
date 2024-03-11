@@ -4,36 +4,6 @@
 #include "akinator.h"
 #include "../BinaryTree/BinaryTree.h"
 
-/*int main(int argc, char const *argv[])
-{
-    char *buff = NULL;
-    int fileSize = 0;
-
-    readToBuff("../akinator/dataBase.txt", &buff, &fileSize);
-    if (buff == NULL)
-    {
-        fprintf(stderr, "FILEREAD ERROR");
-        return 1;
-    }
-
-    fprintf(stderr, "%s", buff);
-
-    int pos = 0;
-    node_t *tree = readDataBase(buff, &pos);
-
-    treePrint(stderr, tree);
-    treeKill_string(tree);
-    free(buff);
-
-    fprintf(stderr, "win");
-
-
-    return 0;
-}*/
-
-//{"some text"{}{}}
-//"\"%[^\"]\"%n"
-
 node_t *readDataBase(char *buff, int *pos)
 {
     assert(buff[*pos] == '{');
