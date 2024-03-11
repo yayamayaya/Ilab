@@ -21,10 +21,10 @@
 
 #define ARITHM(arg)                                                                     \
     do {                                                                                \
-        if (stackPush(stackName, temp1 arg temp2))                                      \
+        if (stackName->stackPush(temp1 arg temp2))                                      \
         {                                                                               \
             ERRLOGRET(ARITHM_GRP_ERR, msgZeroArgs, "ARITHM_GRP_ERR", "", 0, "[error]"); \
-            stackPrint(stackName, IN_CONSOLE);                                          \
+            stackName->stackPrint(IN_CONSOLE);                                          \
         }                                                                               \
     } while(0)  
 
@@ -45,8 +45,8 @@ const char *msgOneArgX = "%-25s| 0x%-15.2X| %-20d| %-20s|\n";
 
 typedef struct
 {
-    stack Stack;
-    stack returnPtrs;
+    struct stack <dataType> stack;
+    struct stack <int> returnPtrs;
     dataType RAM[SIZE_OF_RAM];
     dataType Register[REGISTERS_NUM];
 } processor_t;
@@ -55,13 +55,13 @@ typedef struct
 {
     char *bytecode;
     int bytecodeSize;
-    dataType ip;
+    int ip;
 } bytecode_t;
 
 FILE *logFile = NULL;
 
-int arithmetics(stack *stackName, const int lowerMask);
-int caseJMP(stack *stackName, bytecode_t *bytecode, const int cmd, const int address);
+int arithmetics(stack <dataType> *stackName, const int lowerMask);
+int caseJMP(stack <dataType> *stackName, bytecode_t *bytecode, const int cmd, const int address);
 void fileLog(const char *format, ...);
 char *getCmd(const bytecode_t *bytecode, const signed int skipNum);
 int ipInc(bytecode_t *bytecode, const dataType incNum);
@@ -78,26 +78,30 @@ int main(const int argc, const char** argv)
 
     fileRead(argv[1], &bytecode.bytecode, NULL, &bytecode.bytecodeSize, NULL, BUFF_ONLY);
 
+
+
+#ifdef DEBUG
     const char *log1 = NULL;
     const char *log2 = NULL;
 
-#ifdef DEBUG
     logFile = openLogFile(3, argv, "processorErrorLog.log", "%-25s| %-17s| %-20s| %-20s|\n", "MESSAGE", "ARGUMENT", "IP", "ERROR");
 #endif
 
     processor_t processor = {0};
-    stackCtor(&processor.Stack, 10, "dataStack.log");
-    stackCtor(&processor.returnPtrs, 5, "returnStack.log");
 
-    int lessSignBitMask = 0;
+
+
+    processor.stack.stackCtor(10, "dataStack.log");
+    processor.returnPtrs.stackCtor(5, "returnStack.log");
+
     int errorNum = 0;
     for (; bytecode.ip < bytecode.bytecodeSize;)
         if (errorNum = doCommand(&processor, &bytecode))
             break;
             
         
-    stackDtor(&processor.Stack);
-    stackDtor(&processor.returnPtrs);
+    processor.stack.stackDtor();
+    processor.returnPtrs.stackDtor();
     free(bytecode.bytecode);
 #ifdef DEBUG
     fclose(logFile);
@@ -106,13 +110,13 @@ int main(const int argc, const char** argv)
     return errorNum;
 }
 
-int arithmetics(stack *stackName, const int cmd)
+int arithmetics(stack <dataType> *stackName, const int cmd)
 {
     assert(stackName != NULL);
     dataType temp1 = 0;
     dataType temp2 = 0;
 
-    if (stackPop(stackName, &temp2) || stackPop(stackName, &temp1))
+    if (stackName->stackPop(&temp2) || stackName->stackPop(&temp1))
         return -1;
        
     switch (cmd)
@@ -137,17 +141,17 @@ int arithmetics(stack *stackName, const int cmd)
     return 0;
 }
 
-int caseJMP(stack *stackName, bytecode_t *bytecode, const int cmd, const int address)
+int caseJMP(stack <dataType> *stackName, bytecode_t *bytecode, const int cmd, const int address)
 {
     assert(stackName != NULL);
     assert(bytecode != NULL);
     dataType temp1 = 0;
     dataType temp2 = 0;
 
-    if (stackPop(stackName, &temp2) || stackPop(stackName, &temp1))
+    if (stackName->stackPop(&temp2) || stackName->stackPop(&temp1))
         return -1;
 
-    if (stackPush(stackName, temp1))
+    if (stackName->stackPush(temp1))
         {ERRLOGRET(RPUSH_CMD_FAIL, msgZeroArgs, "RPUSH_CMD_FAIL", "", bytecode->ip, "[error]");}
 
     switch(cmd)
@@ -187,7 +191,7 @@ void takeOneArgument(processor_t *SPU, bytecode_t *bytecode, uint8_t argFlags, d
     assert(bytecode);
     assert(argument);
 
-    if (argFlags & 0b0001 && argFlags & 0b0010)
+    if (argFlags & NUM_ARG && argFlags & REG_ARG)
     {
 
         dataType regHolder = SPU->Register[*getCmdAndInc(bytecode, sizeof(uint8_t))];
@@ -196,16 +200,19 @@ void takeOneArgument(processor_t *SPU, bytecode_t *bytecode, uint8_t argFlags, d
         **argument = regHolder + cmdHolder;
     }
 
-    else if (argFlags & 0b0001)
+    else if (argFlags & NUM_ARG)
         *argument = (dataType *)getCmdAndInc(bytecode, sizeof(dataType));
 
-    else if (argFlags & 0b0010)  
+    else if (argFlags & REG_ARG)  
         *argument = (dataType *)&SPU->Register[*getCmdAndInc(bytecode, sizeof(uint8_t))];
+
+    else if (argFlags & ADR_ARG)
+        *argument = (dataType *)getCmdAndInc(bytecode, sizeof(int));
 
     else
         {ERRLOGRET(, msgZeroArgs, "ARG_TAKE_FAIL", "", bytecode->ip, "[error]");}
 
-    if (argFlags & 0b0100)
+    if (argFlags & RAM_ARG)
         *argument = (dataType *)&SPU->RAM[(int)**argument];
 
         return;
@@ -224,6 +231,8 @@ int doCommand(processor_t *processor, bytecode_t *bytecode)
 
     dataType *argHolder1 = &valueHolder1;
     dataType *argHolder2 = &valueHolder2;
+    
+    int n = 0;
 
     if (cmd & 0x80)
     {
@@ -245,7 +254,7 @@ int doCommand(processor_t *processor, bytecode_t *bytecode)
     switch (cmd)
     {
     case PUSH_GRP:
-        if (stackPush(&processor->Stack, *argHolder1))
+        if (processor->stack.stackPush(*argHolder1))
             {ERRLOGRET(PUSH_CMD_FAIL, msgZeroArgs, "PUSH_CMD_FAIL", "", bytecode->ip, "[error]");}
         break;
     
@@ -253,20 +262,20 @@ int doCommand(processor_t *processor, bytecode_t *bytecode)
     case SUB:
     case MULT:
     case DIV:
-        arithmetics(&processor->Stack, cmd);
+        arithmetics(&processor->stack, cmd);
         break;
     
     case POP_GRP:
-        if (stackPop(&processor->Stack, argHolder1))
+        if (processor->stack.stackPop(argHolder1))
             {ERRLOGRET(RPOP_CMD_FAIL, msgZeroArgs, "RPOP_CMD_FAIL", "", bytecode->ip, "[error]");}
         break;
     
     case IN:
         printf("Enter the number:\n");
-        if(!scanf("%d", argHolder1))
+        if(!scanf(DATA_SPEC, argHolder1, &n))
             {ERRLOGRET(IN_CMD__SCAN_ERR, msgZeroArgs, "IN_CMD__SCAN_ERR", "", bytecode->ip, "[error]");}
 
-        if(stackPush(&processor->Stack, *argHolder1))
+        if(processor->stack.stackPush(*argHolder1))
             {ERRLOGRET(IN_CMD__PUSH_FAIL, msgZeroArgs, "IN_CMD__PUSH_FAIL", "", bytecode->ip, "[error]");}
         break;
 
@@ -279,8 +288,8 @@ int doCommand(processor_t *processor, bytecode_t *bytecode)
         dataType popData = 0;
 
         printf("\n>>>DATA DUMPING:\n");
-        while (stackPop(&processor->Stack, &popData) != STK_EMPTY)    //пустой поп
-            printf(">>> %d\n", popData);    
+        while (processor->stack.stackPop(&popData) != STK_EMPTY)    //пустой поп
+            data_print(stderr, popData);
         printf(">>> DUMP ENDED.\n");
         break; 
     }
@@ -290,7 +299,7 @@ int doCommand(processor_t *processor, bytecode_t *bytecode)
         break;
 
     case CALL:
-        if (stackPush(&processor->returnPtrs, bytecode->ip))
+        if (processor->returnPtrs.stackPush(bytecode->ip))
             {ERRLOGRET(CALL_CMD__PUSH_FAIL, msgZeroArgs, "CALL_CMD__PUSH_FAIL", "", bytecode->ip, "[error]");}
         //fprintf(stderr, "\n\n\n<<%d>>\n\n\n", *argHolder1);
         bytecode->ip = *argHolder1;
@@ -303,11 +312,11 @@ int doCommand(processor_t *processor, bytecode_t *bytecode)
     case JAE:
     case JE:
     case JNE:
-        caseJMP(&processor->Stack, bytecode, cmd, *argHolder1);
+        caseJMP(&processor->stack, bytecode, cmd, *argHolder1);
         break;
 
     case RET:
-        if (stackPop(&processor->returnPtrs, &bytecode->ip)) 
+        if (processor->returnPtrs.stackPop(&bytecode->ip)) 
             {ERRLOGRET(RET_CMD_FAIL, msgZeroArgs, "RET_CMD_FAIL", "", bytecode->ip, "[error]");}
         break;
 
