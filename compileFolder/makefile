@@ -10,9 +10,9 @@ asmrunval:
 
 
 spu-main:
-	g++ ../processor/processor.c ../onegin/fileReader.c ../stack/stack.c -o spu
+	g++ -Wall ../processor/processor.cpp ../onegin/fileReader.c ../stack/stack.h ../stack/stack.hpp  -o spu
 spu-debug:
-	g++ -DDEBUG ../processor/processor.c ../onegin/fileReader.c ../stack/stack.c ../common/log.cpp -o spu
+	g++ -DDEBUG ../processor/processor.cpp ../onegin/fileReader.c ../stack/stack.h ../common/log.cpp -o spu
 
 
 spurun:
