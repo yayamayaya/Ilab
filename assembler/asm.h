@@ -53,6 +53,7 @@ enum ASM
     NUM_ARG         = 0b0001,
     REG_ARG         = 0b0010,
     RAM_ARG         = 0b0100,
+    ADR_ARG         = 0b1000,
     RAMREG_ARG      = 0b0110,
     REGNUM_ARG      = 0b0011,
 };
