@@ -1,21 +1,25 @@
-#pragma once
 #include <stdio.h>
 
-#define SECURE
-#define KILL 
+#ifndef STACK_HEADER
+#define STACK_HEADER
 
-typedef int dataType;
-#define DATAPRINT(arg1, arg2) fprintf(fileName, "%d) %d\n", arg1, arg2)
-#define POISONPRINT(arg) fprintf(fileName, ">> Poison is: %X\n", arg)
-#define DATA_SPEC "%d%n"
+#define SECURE
+
+typedef double dataType;
+/*#define DATAPRINT(arg1, arg2) fprintf(fileName, "%d) %d\n", arg1, arg2)
+#define POISONPRINT(arg) fprintf(fileName, ">> Poison is: %X\n", arg)*/
+#define DATA_SPEC "%lf%n"
+
 typedef long long int canary;
 #define CANARYPRINT(arg1, arg2) fprintf(fileName, ">> Canaries are %llX & %llX\n", arg1, arg2)
+
 typedef long long int hash_t;
 #define HASHPRINT(arg1) fprintf(fileName, ">> Hash is: %llX\n", arg1)
 
-typedef struct 
+template <typename T>
+struct stack 
 {
-    dataType* data;
+    T* data_;
     int size;
     int capacity;
 #ifdef SECURE
@@ -26,7 +30,26 @@ typedef struct
 #ifdef DEBUG
     FILE *logFile;
 #endif
-} stack;
+
+
+    int stk_realloc(const int num);
+    hash_t hashFunc();
+    int poisonFunc();
+    int poisonCheck();
+    int canaryCheck();
+    int hashCheck();
+    int stackCtor(const int capacity, const char* logFileName);
+    int stackDtor();
+    int stackPush(const T num);
+    int stackPop(T *num);
+    int stackPrint(int option);
+    int stackVerificator();
+
+    const T poison = 0xDD;
+};
+
+//Исправить
+//const int stack<int>::poison = 0xDD;
 
 enum debugging
 {
@@ -65,9 +88,7 @@ enum STK_PRINT_OPTIONS
     IN_CONSOLE = 1
 };
 
-int stackCtor(stack *pstk, const int capacity, const char* logFileName);
-int stackDtor(stack *pstk);
-int stackPush(stack *pstk, const dataType num);
-int stackPop(stack *pstk, dataType *num);
-int stackPrint(stack *pstk, int option);
-int stk_realloc(stack *stk, const int num);
+//Программа стека:
+#include "stack.hpp"
+
+#endif
