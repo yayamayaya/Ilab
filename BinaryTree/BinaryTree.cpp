@@ -108,11 +108,12 @@ void deleteNode(node_t *treePtr, const treeDataType num)
     {
         nodeToChange->data = killedNodeLeftT->data;
         nodeToChange->left = killedNodeLeftT->left;
+        nodeToChange->right = killedNodeLeftT->right;
 
-        if (deleteNodePtr(treePtr, killedNodeLeftT))
+        /*if (deleteNodePtr(treePtr, killedNodeLeftT))
         {
             return;
-        }
+        }*/
 
         free(killedNodeLeftT);
 
@@ -122,12 +123,13 @@ void deleteNode(node_t *treePtr, const treeDataType num)
     else if (killedNodeRightT != NULL && killedNodeLeftT == NULL)
     {
         nodeToChange->data = killedNodeRightT->data;
+        nodeToChange->left = killedNodeRightT->left;
         nodeToChange->right = killedNodeRightT->right;
 
-        if (deleteNodePtr(treePtr, killedNodeRightT))
+        /*if (deleteNodePtr(treePtr, killedNodeRightT))
         {
             return;
-        }
+        }*/
 
         free(killedNodeRightT);
 
