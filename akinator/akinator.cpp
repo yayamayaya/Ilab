@@ -81,7 +81,7 @@ int akinatorAsk(const char *format, const char *string)
 {
     assert(format);
 
-
+//setBuff
     fprintf(stderr, format, string);
     fprintf(stderr, " [y/n]\n");    
 
@@ -141,6 +141,8 @@ int addDescription(node_t *node)
 
 void addAnswer(node_t *node)
 {
+    assert(node);
+
     fprintf(stderr, "I don't know such character.. Who is it?\n");
     takeAString(&node->data);
     
