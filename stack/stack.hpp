@@ -8,14 +8,20 @@
 #ifndef STACK
 #define STACK
 
+#ifdef SECURE
+#define STACK_SIZE capacity * sizeof(T) + 2 * sizeof(canary) + sizeof(hash_t), 1
+#else
+#define STACK_SIZE capacity * sizeof(T)
+#endif
+
 #ifdef DEBUG
 #define LOG(...) fileLog(this->logFile, __VA_ARGS__) 
-#define FILECLOSE()               \
-    fclose(this->logFile);        \
-    this->logFile = NULL
+#define LOG_FILE_CLOSE()               \
+    fclose(logFile);        \
+    logFile = NULL
 #else
 #define LOG(...)
-#define FILECLOSE()
+#define LOG_FILE_CLOSE()
 #endif
 
 const char *msgNoArgs = "%-25s| %-20s| %-20s|\n";
@@ -43,7 +49,7 @@ int stack<T>::stackCtor(const int capacity, const char* logFileName)
     fileLog(this->logFile, "%-25s| %-20s| %-20s|\n\n", "INSTRUCT. NAME", "ARGUMENTS", "ERROR");
 #endif
 
-#ifdef SECURE
+/*#ifdef SECURE
     this->leftCanaryPtr = (canary *)calloc(capacity * sizeof(T) + 2 * sizeof(canary) + sizeof(hash_t), 1);       
     if (this->leftCanaryPtr == NULL)        //Аллоцируем память под канареек, хеш и данные, присваиваем адреса памяти канарейкам и данным
     {
@@ -70,7 +76,16 @@ int stack<T>::stackCtor(const int capacity, const char* logFileName)
 #endif
         return MEM_ALC_ERR;
     }
-#endif
+#endif*/
+
+    data = (T *)calloc(STACK_SIZE);
+    if (data == NULL)
+    {
+        LOG(msgNoArgs, "MEM_ALC_ERR", "", "[error]");
+        LOG_FILE_CLOSE();
+        return MEM_ALC_ERR;
+    }
+    
 
     this->size = 0;
     this->capacity = capacity;
@@ -106,7 +121,7 @@ int stack<T>::stackDtor()
 
     this->data_ = NULL;
     LOG(msgNoArgs, "STK_DESTTED", "", "");
-    FILECLOSE();
+    LOG_FILE_CLOSE();
 
     return 0;
 }
