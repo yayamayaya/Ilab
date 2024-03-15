@@ -3,53 +3,67 @@
 #ifndef STACK_HEADER
 #define STACK_HEADER
 
-#define SECURE
+typedef long long int stackData_t;
+#define DATA_SPEC "%lld%n"
 
-typedef double dataType;
-/*#define DATAPRINT(arg1, arg2) fprintf(fileName, "%d) %d\n", arg1, arg2)
-#define POISONPRINT(arg) fprintf(fileName, ">> Poison is: %X\n", arg)*/
-#define DATA_SPEC "%lf%n"
-
-typedef long long int canary;
+typedef long long int canary_t;
 #define CANARYPRINT(arg1, arg2) fprintf(fileName, ">> Canaries are %llX & %llX\n", arg1, arg2)
+#define CLASS_L_CANARY_VAL 0xABEBADED
+#define CLASS_R_CANARY_VAL 0xDEDABEBA
 
 typedef long long int hash_t;
 #define HASHPRINT(arg1) fprintf(fileName, ">> Hash is: %llX\n", arg1)
 
 template <typename T>
-struct stack 
+class stack 
 {
-    T* data_;
-    int size;
-    int capacity;
-#ifdef SECURE
-    canary *leftCanaryPtr;
-    hash_t *hash;                    //hash - число, высчитываемое из данных в стеке
-    canary *rightCanaryPtr;
-#endif
-#ifdef DEBUG
-    FILE *logFile;
-#endif
+    canary_t classLCanary = CLASS_L_CANARY_VAL;
+public:
 
-
-    int stk_realloc(const int num);
-    hash_t hashFunc();
-    int poisonFunc();
-    int poisonCheck();
-    int canaryCheck();
-    int hashCheck();
-    int stackCtor(const int capacity, const char* logFileName);
+    int stackCtor(const int stackCapacity, const char* logFileName);
     int stackDtor();
     int stackPush(const T num);
     int stackPop(T *num);
     int stackPrint(int option);
     int stackVerificator();
+    int stk_realloc(const int num);
 
-    const T poison = 0xDD;
+    T* data;
+    int size;
+    int capacity;
+
+private:
+
+#ifdef DEBUG
+    FILE *logFile;
+#endif
+
+    hash_t hashFunc();
+    int poisonFunc();
+    int poisonCheck();
+    int canaryCheck();
+    int hashCheck();
+
+    canary_t *getLeftCanaryPtr();
+    hash_t *getHashNumberPtr();
+    T *getDataPtr();
+    canary_t *getRightCanaryPtr();
+
+    static const T poison;
+    canary_t classRCanary = CLASS_R_CANARY_VAL;
 };
 
-//Исправить
-//const int stack<int>::poison = 0xDD;
+template<>
+const int stack<int>::poison = 0xDD;
+template<>
+const long long int stack<long long int>::poison = 0xFDEADF;
+template<>
+const double stack<double>::poison = 0xFFDEAD;
+template<>
+const float stack<float>::poison = 0xDA;
+template<>
+const char stack<char>::poison = 0xD;
+
 
 enum debugging
 {
@@ -88,7 +102,5 @@ enum STK_PRINT_OPTIONS
     IN_CONSOLE = 1
 };
 
-//Программа стека:
 #include "stack.hpp"
-
 #endif
