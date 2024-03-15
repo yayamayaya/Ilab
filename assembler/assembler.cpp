@@ -12,15 +12,15 @@
 #include "../common/log.h"
 
 #ifdef DEBUG
-    #define LOG(...) fileLog(logFile, __VA_ARGS__)
-    #define LOG_FCLOSE() fclose(logFile)
+    #define LOG(...) {fileLog(logFile, __VA_ARGS__);}
+    #define LOG_FCLOSE() {fclose(logFile);}
 #else
     #define LOG(...)
     #define LOG_FCLOSE() 
 #endif
 
 #if 0
-    #define LABELS_PRINT(arg) labelTablePrint(arg)
+    #define LABELS_PRINT(arg) {labelTablePrint(arg)}
 #else
     #define LABELS_PRINT(arg)
 #endif
@@ -206,7 +206,7 @@ int argumentParsing(char *argToken, bytecode_t *bytecode)
     assert(argToken);
 
     char regHolder = 0;
-    dataType dataHolder = 0;
+    stackData_t dataHolder = 0;
     int intHolder = 0;
     int n = 0;
 
@@ -227,7 +227,7 @@ int argumentParsing(char *argToken, bytecode_t *bytecode)
     sscanf(argToken, DATA_SPEC, &dataHolder, &n);
     if (n)
     {
-        numInArr(&dataHolder, sizeof(dataType), bytecode);
+        numInArr(&dataHolder, sizeof(stackData_t), bytecode);
         return NUM_ARG;
     }
     
