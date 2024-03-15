@@ -1,18 +1,20 @@
 asm-main:
 	g++ ../assembler/assembler.cpp ../assembler/fileRead.cpp ../common/log.cpp -o asm
 asm-debug:
-	g++ -DDEBUG ../assembler/assembler.cpp ../assembler/fileRead.cpp ../common/log.cpp -o asm
+	g++ -g -DDEBUG ../assembler/assembler.cpp ../assembler/fileRead.cpp ../common/log.cpp -o asm
 
 asmrun:
 	./asm code.txt bytecode.txt logFile.log
 asmrunval:
 	valgrind ./asm code.txt bytecode.txt
+asmrunfact:
+	./asm ../assembler/factorial.txt bytecode.txt logFile.log
 
 
 spu-main:
-	g++ -Wall ../processor/processor.cpp ../onegin/fileReader.c ../stack/stack.h ../stack/stack.hpp  -o spu
+	g++  -g ../processor/processor.cpp ../onegin/fileReader.c ../stack/stack.h ../stack/stack.hpp -o spu
 spu-debug:
-	g++ -DDEBUG ../processor/processor.cpp ../onegin/fileReader.c ../stack/stack.h ../common/log.cpp -o spu
+	g++ -fsanitize=address -DDEBUG -DSECURE -g ../processor/processor.cpp ../onegin/fileReader.c ../stack/stack.h ../common/log.cpp -o spu
 
 
 spurun:
