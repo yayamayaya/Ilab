@@ -28,12 +28,14 @@ treeTest-m:
 
 
 akin-main:
-	g++ ../akinator/akinator.cpp ../BinaryTree/BinaryTree.cpp ../akinator/dataBaseRead.cpp ../onegin/fileReader.c -o akinator
+	g++ -g ../stack/stack.hpp ../stack/stack.cpp ../akinator/akinator.cpp ../akinator/akinate.cpp ../akinator/workWithDescription.cpp ../BinaryTree/BinaryTree.cpp ../akinator/dataBaseRead.cpp ../onegin/fileReader.c -o akinator
+akin-debug:
+	g++ -g -DDEBUG ../common/log.cpp ../stack/stack.hpp ../stack/stack.cpp ../akinator/akinator.cpp ../akinator/akinate.cpp ../akinator/workWithDescription.cpp ../BinaryTree/BinaryTree.cpp ../akinator/dataBaseRead.cpp ../onegin/fileReader.c -o akinator
 
 akinrun:
 	./akinator
 akinrunval:
-	valgrind ./akinator
+	valgrind -s --track-origins=yes --leak-check=full ./akinator akinatorLog.log
 
 
 akin-dataRead:
