@@ -11,7 +11,7 @@
 #define SIZE_OF_RAM 256
 
 #ifdef DEBUG
-#define ERRLOGRET(arg, ...)         \
+#define ERRLOGRET(arg, ...)                  \
     fileLog(logFile, __VA_ARGS__);           \
     return arg
 #else
