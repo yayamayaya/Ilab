@@ -29,12 +29,17 @@
 #define LOG_FILE_CLOSE()
 #endif
 
-const char *msgNoArgs = "%-25s| %-20s| %-20s|\n";
-const char *msgOneArg = "%-25s| %-20d| %-20s|\n";
-
 //const stackData_t poison = 0xDD;
 const canary_t Lcanary = 0xDEDDEAD;
 const canary_t Rcanary = 0xFFABEBA;
+
+extern const char *msgNoArgs;
+extern const char *msgOneArg;
+
+void data_print(FILE *fileName, const char num);
+void data_print(FILE *fileName, const int num);
+void data_print(FILE *fileName, const double num);
+void data_print(FILE *fileName, const long long int num);
 
 //#ifdef SECURE
 
@@ -83,9 +88,9 @@ int stack<T>::stackCtor(const int stackCapacity, const char* logFileName)
     //fprintf(stderr, "Stack size: %d; Stack pointer: %p\n", STACK_SIZE, data);
     if (data == NULL)
     {
-        STACK_LOG(msgNoArgs, "MEM_ALC_ERR", "", "[error]");
+        STACK_LOG(msgNoArgs, "STK_MEM_ALC_ERR", "", "[error]");
         LOG_FILE_CLOSE();
-        return MEM_ALC_ERR;
+        return STK_MEM_ALC_ERR;
     }
     
 #ifdef SECURE
@@ -128,7 +133,7 @@ int stack<T>::stackPush(const T num)
 
     if (size == capacity)           //Проверка на переполнение массива
         if(stk_realloc(UP))
-            return MEM_RLC_ERR;
+            return STK_MEM_RLC_ERR;
     
     *(getDataPtr() + size) = num;
     //data[this->size] = num;
@@ -167,7 +172,8 @@ int stack<T>::stackPop(T *num)
 template <typename T>
 int stack<T>::stackPrint(int option)
 {
-    FILE *fileName = stderr;
+    FILE *fileName = stdout;
+    setbuf(stdout, NULL);    
     DUMP_TO_LOGFILE();
 
     int errorNum = stackVerificator();
@@ -217,8 +223,8 @@ int stack<T>::stk_realloc(const int num)
     {
         if (capacity == 1)
         {
-            STACK_LOG(msgNoArgs, ">> Memory reallocatiom error", "MEM_RLC_ERR", "[error]");
-            return MEM_RLC_ERR;
+            STACK_LOG(msgNoArgs, ">> Memory reallocatiom error", "STK_MEM_RLC_ERR", "[error]");
+            return STK_MEM_RLC_ERR;
         }
         
         capacity /= 2;
@@ -228,8 +234,8 @@ int stack<T>::stk_realloc(const int num)
     T *memHolder = (T *)realloc(data, STACK_SIZE);
     if (!memHolder)
     {
-        STACK_LOG(msgNoArgs, ">> Memory reallocatiom error", "MEM_RLC_ERR", "[error]");
-        return MEM_RLC_ERR;
+        STACK_LOG(msgNoArgs, ">> Memory reallocatiom error", "STK_MEM_RLC_ERR", "[error]");
+        return STK_MEM_RLC_ERR;
     }
     data = memHolder;
     *getRightCanaryPtr() = Rcanary;
@@ -327,21 +333,6 @@ int stack<T>::stackVerificator()
     }
 #endif  
     return 0;
-}
-
-void data_print(FILE *fileName, const int num)
-{
-    fprintf(fileName, "%d\n", num);
-}
-
-void data_print(FILE *fileName, const double num)
-{
-    fprintf(fileName, "%.2f\n", num);
-}
-
-void data_print(FILE *fileName, const long long int num)
-{
-    fprintf(fileName, "%lld\n", num);
 }
 
 #endif

@@ -1,10 +1,11 @@
+#pragma once
 #include <stdio.h>
 
 #ifndef STACK_HEADER
 #define STACK_HEADER
 
 typedef long long int stackData_t;
-#define DATA_SPEC "%lld%n"
+#define DATA_SPEC "%d%n"
 
 typedef long long int canary_t;
 #define CANARYPRINT(arg1, arg2) fprintf(fileName, ">> Canaries are %llX & %llX\n", arg1, arg2)
@@ -53,18 +54,6 @@ private:
     canary_t classRCanary = CLASS_R_CANARY_VAL;
 };
 
-template<>
-const int stack<int>::poison = 0xDD;
-template<>
-const long long int stack<long long int>::poison = 0xFDEADF;
-template<>
-const double stack<double>::poison = 0xFFDEAD;
-template<>
-const float stack<float>::poison = 0xDA;
-template<>
-const char stack<char>::poison = 0xD;
-
-
 enum debugging
 {
     STK_CTED = 0,
@@ -80,8 +69,8 @@ enum debugging
 
 enum errors
 {
-    MEM_ALC_ERR = 515,
-    MEM_RLC_ERR = 516,
+    STK_MEM_ALC_ERR = 515,
+    STK_MEM_RLC_ERR = 516,
     PSN_ERR = 10,
     CANARY_ERR = 11,
     HASH_ERR = 12,
