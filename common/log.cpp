@@ -20,6 +20,7 @@ FILE *openLogFile(const int argNum, const char **argv, const char *StandardFileN
 {
     assert(argv);
     assert(StandardFileName);
+    setbuf(stdout, NULL);
 
     FILE *logFile = NULL;
 
@@ -30,9 +31,10 @@ FILE *openLogFile(const int argNum, const char **argv, const char *StandardFileN
     
     if (logFile == NULL)
     {
-        fprintf(stderr, "Can't open logFile.");
+        fprintf(stdout, "Can't open logFile.");
         return NULL;
     }
+    setbuf(logFile, NULL);
 
     va_list args = {};
     va_start(args, format);
