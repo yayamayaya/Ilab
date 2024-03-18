@@ -36,8 +36,8 @@ int akinatorAsk(const char *format, const char *string)
 {
     assert(format);
 
-    fprintf(stdout, format, string);
-    fprintf(stdout, " [y/n]\n");    
+    printf(format , string);
+    printf(" [y/n]\n");    
 
     int scanned = 0;
     char answer = 0;
@@ -80,15 +80,15 @@ int addDescription(node_t *node)
 
     rightNodeAnswer->data = node->data;
 
-    fprintf(stdout, "Then who is it?\n");
+    printf(">>  Then who is it?\n");
     if (takeAString(&leftNodeAnswer->data))
         return NULL_STR;
 
-    fprintf(stdout, "And how is %s different from %s?\n", leftNodeAnswer->data, rightNodeAnswer->data);
+    printf(">>  And how is %s different from %s?\n", leftNodeAnswer->data, rightNodeAnswer->data);
     if (takeAString(&node->data))
         return NULL_STR;
 
-    fprintf(stdout, "Good! I will remember that!\n");
+    printf(">>  Good! I will remember that!\n");
 
     return 0;
 }
@@ -97,7 +97,7 @@ void addAnswer(node_t *node)
 {
     assert(node);
 
-    fprintf(stdout, "I don't know such character.. Who is it?\n");
+    printf(">>  I don't know such character.. Who is it?\n");
     takeAString(&node->data);
     
     return;
@@ -112,9 +112,9 @@ int Akinator(node_t *treeNode)
         if (!treeNode->left && !treeNode->right)
         {
             
-            if (akinatorAsk("Is it %s?", treeNode->data))
+            if (akinatorAsk(">>  Is it %s?", treeNode->data))
             {
-                fprintf(stdout, "I knew it!\n");
+                printf(">>  I knew it!\n");
                 LOG(format, "ANSWER_FOUND", ANSWER_FOUND, "");
                 return ANSWER_FOUND;
             }
@@ -128,7 +128,7 @@ int Akinator(node_t *treeNode)
                 }
         } 
 
-        if (akinatorAsk("%s?\n", treeNode->data))
+        if (akinatorAsk(">>  %s?\n", treeNode->data))
             if (treeNode->left)
             {
                 treeNode = treeNode->left;
