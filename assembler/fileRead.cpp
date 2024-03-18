@@ -22,6 +22,8 @@ int readToBuff(const char *fileName, char **pcode, int *pfileSize)
 
     int size = 0;                                           //Размер файла в символах
     sizeOfFile(file, &size);
+    if(size == 0)
+        printf(">>> File is empty\n");
 
     char *Buff = (char *)calloc(size + 1, sizeof(char));       //Создаем массив, куда запишем весь файл
     if (Buff == NULL)
@@ -43,68 +45,55 @@ int readToBuff(const char *fileName, char **pcode, int *pfileSize)
     return 0;
 }
 
-int spacesToZeroes(char *code, const int fileSize, int *wordCount)
+int specialChToZero(char *code, const int fileSize, int *wordCount)
 {
-    if (code == NULL || fileSize == 0 || wordCount == NULL)
-        return 1;
-    
-    int i = 0;
+    assert(code);
+    assert(wordCount);
+    int character = 0;
 
-    while (code[i] != '\0')
+    for (; character < fileSize; character++)
     {
-        if (code[i] == ';')
-            while (code[i] != '\n' && code[i] != '\r' && code[i] != '\0')
-                i++;
-
-        if (code[i] == '[')
-            do
-            {
-                assert(i < fileSize);
-                i++;
-            } while (code[i] != ']');
-            
+        if (code[character] == ';')
+            while ((!isspace(code[character]) || code[character] == ' ') && code[character] != '\0' )
+                character++;
         
-        if ((!isspace(code[i + 1]) || !isspace(code[i - 1])) && isspace(code[i]) || code[i] == ',')
+        if (isspace(code[character]) || (!isalnum(code[character]) && code[character] != '-' && code[character] != ':'))
         {
-            code[i] = '\0';            
-            if (!isspace(code[i + 1]))
+            code[character] = '\0';
+            if (isalnum(code[character + 1]) || code[character + 1] == '-')
                 (*wordCount)++;
         }
-        i++;
     }
-    
-    if (code[i - 1] != '\0')
+    if (code[0] != '\0')
         (*wordCount)++;
-    
 
     return 0;
 }
-            
-int breakToWords(char *code, char ***wordsPtrs, int *wordCount)
+
+int Tokenization(char *code, char ***tokenArr, int *wordCount)
 {
+    assert(code);
+
     char **tempArr = (char **)calloc(*wordCount, sizeof(char *));
     if (tempArr == NULL)
     {
         printf("Memory allocation error.");      
         return 1;  
     }
-        
-    tempArr[0] = code;
-    for (int i = 1; i < *wordCount; i++)
-    {
-        tempArr[i] = strchr(tempArr[i - 1], '\0') + 1;
-        while (*tempArr[i] == '\0' || *tempArr[i] == '\r')
-            tempArr[i] = strchr(tempArr[i], '\0') + 1;
-    }
+    for (int i = 0, counter = 0; counter < *wordCount; i++)
+        if (isalnum(code[i]) || code[i] == '-')
+        {
+            tempArr[counter] = code + i;
+            i = strchr(code + i, '\0') - code;
+            ++counter;
+        }
 
-    *wordsPtrs = tempArr;
-    /*if (wordCount != NULL)
-        *wordCount = strNum;*/
+    *tokenArr = tempArr;
 
     return 0;
 }
 
-int fileRead(const char *fileName, char ***strArrPtr, int *wordCount)
+int fileRead(const char *fileName, char **bufferPtr, char ***strArrPtr, int *wordCount)
 {
     assert(fileName != NULL);
     assert(strArrPtr != NULL);
@@ -113,8 +102,10 @@ int fileRead(const char *fileName, char ***strArrPtr, int *wordCount)
     int fileSize = 0;
     
     readToBuff(fileName, &code, &fileSize);
-    spacesToZeroes(code, fileSize, wordCount);
-    breakToWords(code, strArrPtr, wordCount);
+    specialChToZero(code, fileSize, wordCount);
+    Tokenization(code, strArrPtr, wordCount);
+
+    *bufferPtr = code;
 
     return 0;
 }
