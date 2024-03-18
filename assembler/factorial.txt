@@ -1,17 +1,18 @@
 in
 call metka
+
 out
 halt
 
 metka:
-pop ax
-push ax
-push ax
-push 1
-sub
-push 1
-je rec
-call metka
+    pop ax
+    push ax
+    push 1 push ax
+    sub
+    push 1
+    je rec
+    call metka
+
 rec:
-mult
-ret
+    mult
+    ret
