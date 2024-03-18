@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
-#include "../common/log.h"
+#include  "../common/log.h"
 #include "stack.h"
 
 #ifndef STACK
@@ -29,10 +29,6 @@
 #define LOG_FILE_CLOSE()
 #endif
 
-//const stackData_t poison = 0xDD;
-const canary_t Lcanary = 0xDEDDEAD;
-const canary_t Rcanary = 0xFFABEBA;
-
 extern const char *msgNoArgs;
 extern const char *msgOneArg;
 
@@ -41,34 +37,33 @@ void data_print(FILE *fileName, const int num);
 void data_print(FILE *fileName, const double num);
 void data_print(FILE *fileName, const long long int num);
 
-//#ifdef SECURE
-
 template <typename T>
-canary_t *stack<T>:: getLeftCanaryPtr()
+canary_t *Stack<T>:: getLeftCanaryPtr()
 {
     return (canary_t *)data;
 }
 
 template <typename T>
-hash_t *stack<T>:: getHashNumberPtr()
-{
-    return (hash_t *)((char *)data + sizeof(canary_t));
-}
-
-template <typename T>
-T *stack<T>:: getDataPtr()
-{
-    return (T *)((char *)data + STACK_DATA_POSITION);
-}
-
-template <typename T>
-canary_t *stack<T>:: getRightCanaryPtr()
+canary_t *Stack<T>:: getRightCanaryPtr()
 {
     return (canary_t *)((char *)data + sizeof(canary_t) + sizeof(hash_t) + capacity * sizeof(T));
 }
 
 template <typename T>
-int stack<T>::stackCtor(const int stackCapacity, const char* logFileName)
+hash_t *Stack<T>:: getHashNumberPtr()
+{
+    return (hash_t *)((char *)data + sizeof(canary_t));
+}
+
+template <typename T>
+T *Stack<T>:: getDataPtr()
+{
+    return (T *)((char *)data + STACK_DATA_POSITION);
+}
+
+
+template <typename T>
+int Stack<T>::stackCtor(const int stackCapacity, const char* logFileName)
 {
     assert(stackCapacity != 0);
 
@@ -77,7 +72,7 @@ int stack<T>::stackCtor(const int stackCapacity, const char* logFileName)
     this->logFile = fopen(logFileName, "w");
     if (this->logFile == NULL)
     {
-        printf("[error]>>Can't open stack log.\n");
+        printf("[error]>>Can't open Stack log.\n");
         return LOG_FILE_OPEN_ERR;     
     }
     fileLog(this->logFile, "%-25s| %-20s| %-20s|\n\n", "INSTRUCT. NAME", "ARGUMENTS", "ERROR");
@@ -100,7 +95,6 @@ int stack<T>::stackCtor(const int stackCapacity, const char* logFileName)
 #endif
 
     size = 0;
-    //capacity = stackCapacity;
     poisonFunc();   
 
     STACK_LOG(msgNoArgs, "STK_CONSTED", "", ""); 
@@ -108,7 +102,7 @@ int stack<T>::stackCtor(const int stackCapacity, const char* logFileName)
 }
 
 template <typename T>
-int stack<T>::stackDtor()
+int Stack<T>::stackDtor()
 {
     int errorNum = stackVerificator();
     
@@ -121,11 +115,11 @@ int stack<T>::stackDtor()
     STACK_LOG(msgNoArgs, "STK_DESTTED", "", "");
     LOG_FILE_CLOSE();
 
-    return 0;
+    return errorNum;
 }
 
 template <typename T>
-int stack<T>::stackPush(const T num)
+int Stack<T>::stackPush(const T num)
 {
     int errorNum = stackVerificator();
     if (errorNum)
@@ -136,8 +130,7 @@ int stack<T>::stackPush(const T num)
             return STK_MEM_RLC_ERR;
     
     *(getDataPtr() + size) = num;
-    //data[this->size] = num;
-    STACK_LOG("%-25s| %-20lld| %-20s|\n", "STK_PUSH", *(getDataPtr() + size), "");
+    STACK_LOG("%-25s| %-20lf| %-20s|\n", "STK_PUSH", *(double *)(getDataPtr() + size), "");
     size++;
 
     HASH_REFRESH();
@@ -146,7 +139,7 @@ int stack<T>::stackPush(const T num)
 }
 
 template <typename T>
-int stack<T>::stackPop(T *num)
+int Stack<T>::stackPop(T *num)
 {    
     int errorNum = stackVerificator();
     if (errorNum)
@@ -170,7 +163,7 @@ int stack<T>::stackPop(T *num)
 }
 
 template <typename T>
-int stack<T>::stackPrint(int option)
+int Stack<T>::stackPrint(int option)
 {
     FILE *fileName = stdout;
     setbuf(stdout, NULL);    
@@ -184,7 +177,7 @@ int stack<T>::stackPrint(int option)
     fprintf(fileName, "\n>> Stack dump:\n");
     fprintf(fileName, "\n>> Size: %d", size);
     fprintf(fileName, "\n>> Capacity: %d", capacity);
-    fprintf(fileName, "\n>> Current data in stack:\n");    
+    fprintf(fileName, "\n>> Current data in Stack:\n");    
     for (int i = 0; i < size; i++)
     {
         fprintf(fileName, "%d) ", i + 1);
@@ -206,7 +199,7 @@ int stack<T>::stackPrint(int option)
 }
 
 template <typename T>
-int stack<T>::stk_realloc(const int num)
+int Stack<T>::stk_realloc(const int num)
 {
     assert(num == UP || num == DOWN);
 
@@ -250,7 +243,7 @@ int stack<T>::stk_realloc(const int num)
 }
 
 template <typename T>
-hash_t stack<T>::hashFunc()
+hash_t Stack<T>::hashFunc()
 {
     hash_t hashHolder = 0;
     for (int i = 0; i < size; i++)
@@ -262,7 +255,7 @@ hash_t stack<T>::hashFunc()
 }
 
 template <typename T>
-int stack<T>::poisonFunc()
+int Stack<T>::poisonFunc()
 {   
     for (int i = size; i < capacity; i++)
     {
@@ -275,7 +268,7 @@ int stack<T>::poisonFunc()
 }
 
 template <typename T>
-int stack<T>::poisonCheck()
+int Stack<T>::poisonCheck()
 {
     for (int pos = size; pos < capacity; pos++)
         if (*(getDataPtr() + pos) != poison)
@@ -285,7 +278,7 @@ int stack<T>::poisonCheck()
 }
 
 template <typename T>
-int stack<T>::canaryCheck()
+int Stack<T>::canaryCheck()
 {
     if (*(getLeftCanaryPtr()) != Lcanary || *(getRightCanaryPtr()) != Rcanary)
         return CANARY_ERR;
@@ -294,7 +287,7 @@ int stack<T>::canaryCheck()
 }
 
 template <typename T>
-int stack<T>::hashCheck()
+int Stack<T>::hashCheck()
 {
     if (*(getHashNumberPtr()) != hashFunc())
         return HASH_ERR;
@@ -303,7 +296,7 @@ int stack<T>::hashCheck()
 }
 
 template <typename T>
-int stack<T>::stackVerificator()
+int Stack<T>::stackVerificator()
 {
 #ifdef SECURE
     if (capacity == 0)
@@ -326,13 +319,19 @@ int stack<T>::stackVerificator()
         STACK_LOG(msgNoArgs, ">> Hash is not matching.", "HASH_ERR", "[danger]", "");
         return HASH_ERR;
     }
-    if (classLCanary != CLASS_L_CANARY_VAL || classRCanary != CLASS_R_CANARY_VAL)
+    if (classLCanary != kLeftCanary || classRCanary != kRightCanary)
     {
         STACK_LOG(msgNoArgs, ">> Class canary is damaged. ", "CANARY_ERR", "[error]", "");
         return CANARY_ERR;
     }
 #endif  
     return 0;
+}
+
+template <typename T>
+int Stack<T>::getDataOnPos(const int pos)
+{
+    return *(getDataPtr() + pos);
 }
 
 #endif
