@@ -80,7 +80,7 @@ static void labelTablePrint(const labelTable_t *labels);
 
 #define MEM_FREE()                              \
     free(bytecode.bytecodeHolder);              \
-    free(*tokens.tokenArr);                     \
+    free(buffer);                     \
     free(tokens.tokenArr);                      \
     free(labels.labelArr);                      \
     LOG_FCLOSE()
@@ -104,6 +104,7 @@ int main(const int argc, const char* argv[])
     bytecode_t bytecode = {(uint8_t *)calloc(100, sizeof(char)), 100, 0};
     labelTable_t labels = {(label_t *)calloc(10, sizeof(label_t)), 10, 0};
     tokens_t tokens = {0};
+    char *buffer = NULL;
 
     if (bytecode.bytecodeHolder == NULL || labels.labelArr == NULL)
     {
@@ -111,10 +112,10 @@ int main(const int argc, const char* argv[])
         free(bytecode.bytecodeHolder);
         free(labels.labelArr);
         LOG_FCLOSE();
-        return MEM_ALC_ERR;
+        return ASM_MEM_ALC_ERR;
     }  
 
-    fileRead(argv[1], &tokens.tokenArr, &tokens.tokenNumber);
+    fileRead(argv[1], &buffer,  &tokens.tokenArr, &tokens.tokenNumber);
     if (tokens.tokenArr == NULL)
     {
         LOG(msgZeroArgs, "FILEREAD_ERR", "", 0, "[error]");
@@ -124,10 +125,9 @@ int main(const int argc, const char* argv[])
     LOG(msgZeroArgs, "FILEREAD_OK", "", 0, "");
     
     int error = Compiler(&tokens, &bytecode, &labels);
-
     if(error)
     {
-        fprintf(stderr, ">>errorNum = %d", error);
+        fprintf(stderr, ">>errorNum = %d\n", error);
         fprintf(stderr, ">>Compilation's not successfull, please check your syntax and code errors.\n");
         MEM_FREE();
         return COMP_ERR;
@@ -206,7 +206,7 @@ int argumentParsing(char *argToken, bytecode_t *bytecode)
     assert(argToken);
 
     char regHolder = 0;
-    stackData_t dataHolder = 0;
+    data_t dataHolder = 0;
     int intHolder = 0;
     int n = 0;
 
@@ -227,7 +227,7 @@ int argumentParsing(char *argToken, bytecode_t *bytecode)
     sscanf(argToken, DATA_SPEC, &dataHolder, &n);
     if (n)
     {
-        numInArr(&dataHolder, sizeof(stackData_t), bytecode);
+        numInArr(&dataHolder, sizeof(data_t), bytecode);
         return NUM_ARG;
     }
     
@@ -416,6 +416,7 @@ int Compiler(const tokens_t *tokens, bytecode_t *bytecode, labelTable_t *labels)
         case SUB:
         case MULT:
         case DIV:
+        case SQRT:
         case IN:
         case OUT:
         case HALT:
