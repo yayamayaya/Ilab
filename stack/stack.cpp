@@ -1,15 +1,17 @@
 #include "stack.h"
 
+// type traits
+
 template<>
-const int stack<int>::poison = 0xDD;
+const int Stack<int>::poison = 0xDD;
 template<>
-const long long int stack<long long int>::poison = 0xFDEADF;
+const long long int Stack<long long int>::poison = 0xFDEADF;
 template<>
-const double stack<double>::poison = 0xFFDEAD;
+const double Stack<double>::poison = 0xFFDEAD;
 template<>
-const float stack<float>::poison = 0xDA;
+const float Stack<float>::poison = 0xDA;
 template<>
-const char stack<char>::poison = 0xD;
+const char Stack<char>::poison = 0xD;
 
 const char *msgNoArgs = "%-25s| %-20s| %-20s|\n";
 const char *msgOneArg = "%-25s| %-20d| %-20s|\n";
