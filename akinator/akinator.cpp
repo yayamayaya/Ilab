@@ -33,9 +33,9 @@ int main(const int argc, const char *argv[])
     readToBuff("../akinator/dataBase.txt", &buff, NULL);
     node_t *root = readDataBase(buff, &pos);
     free(buff);
-    //Происходит акинация
+
     int errorMsg = startAkinator(root);
-    //Запись дерева в файл.
+    
     FILE *dataBase = fopen("../akinator/dataBase.txt", "w");
     treePrint(dataBase, root);
     fclose(dataBase);
@@ -63,23 +63,21 @@ int startAkinator(node_t *root)
         }
         else if (option == DESCRIPTION)
         {
-            printf("Give a name of an object, which description you want to find:\n");
-            stack<char> description = giveDescription(root, "descriptionLog.log");
-            description.stackDtor();
+            giveDescription(root);
         }
         else if (option == COMPARE)
         {
             compareTwoObjects(root);
         }
         
-    } while (akinatorAsk("Do you want to continue%s", "?"));
+    } while (akinatorAsk(">>  Do you want to continue%s", "?"));
 
     return FATAL_ERR;
 }
 
 int chooseAction()
 {
-    printf(">> Choose option:\n");
+    printf(">>  Choose option:\n");
     printf("1) Run Akinator Game\n");
     printf("2) Find description of an object\n");
     printf("3) Compare two objects\n");
@@ -88,7 +86,7 @@ int chooseAction()
     int scanned = 0;
     do
     {
-        printf(">> Type a number beetwen [0-3], where '0' is stop programm:\n");
+        printf(">>  Type a number beetwen [0-3], where '0' is stop programm:\n");
         scanf("%d%n", &option, &scanned);
     } while (scanned == 0 && !(0 <= option && option <= 3));
     
