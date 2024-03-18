@@ -1,1 +1,1 @@
-{"is a jopa"{"sanya"{}{}}{"has a jopa"{"yarrick"{}{}}{"dlya umnyh"{"Derb"{}{}}{"ded"{}{}}}}}
+{"Animal"{"poltorashka"{}{}}{"ded"{}{}}}
