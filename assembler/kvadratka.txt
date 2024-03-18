@@ -1,0 +1,129 @@
+    in
+    in
+    in
+
+    pop cx
+    pop bx
+    pop ax
+
+    call kvUr
+    out
+    halt
+
+
+kvUr:
+    push ax push 0
+    je aZero
+    pop ax
+
+    push bx push 0
+    je bZero
+    pop bx
+
+    push cx push 0
+    je cZero
+    pop cx
+
+    call discriminant
+    call solve
+    ret
+
+
+aZero:
+    pop ax 
+    push bx push 0
+    je noSol
+    push cx push -1
+    mult
+
+    div
+
+    ret
+
+bZero:
+    pop bx
+    push cx push 0
+    je end
+    pop cx
+
+    push ax push cx
+    push -1
+    mult div
+
+    push 0
+    jb noSol
+
+    sqrt
+
+    pop dx
+    push dx
+    push dx
+    push -1
+    mult
+
+    ret
+
+cZero:
+    pop cx
+
+    push ax push bx
+    push -1
+
+    mult div
+    push 0
+
+    ret
+
+
+discriminant:
+    push bx push bx
+    mult
+    push -4 push ax push cx
+    mult mult
+    add
+    pop dx
+    ret
+
+solve:
+    push dx push 0
+    jb noSol
+
+    push 0
+    je oneSol
+    pop dx
+
+    jmp twoSol
+
+noSol:
+    pop dx
+    ret
+
+oneSol:
+    pop dx
+    push ax push 2
+    mult
+    push bx push -1
+    mult
+    div
+    ret
+
+twoSol:
+    push ax push 2
+    mult
+    push dx
+    sqrt    
+    push bx push -1
+    mult
+    add
+    div
+
+    push ax push 2
+    mult
+    push dx
+    sqrt    
+    push bx push -1
+    mult
+    sub
+    div
+
+    ret
