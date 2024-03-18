@@ -1,11 +1,14 @@
 #pragma once
 
-#define COMMANDS_NUM 19
+#define COMMANDS_NUM 20
 #define REGISTERS_NUM 4
 
 #define REGISTER_POSITION_AS_ARGUMENT 2
 
 typedef unsigned char byte_t;
+
+typedef double data_t;
+#define DATA_SPEC "%lf%n"
 
 enum ARGUMENT_TYPE
 {
@@ -22,6 +25,7 @@ enum ASM
     SUB             = 0x03,     //Вычитание
     MULT            = 0x04,     //Умножение
     DIV             = 0x05,     //Деление
+    SQRT            = 0x0A,     //Квадратный корень
 
     POP_GRP         = 0x82,
     
@@ -74,6 +78,7 @@ enum asmDebug
     FILEWRITE_ERR,
     FILEOPEN_ERR,
     FATAL_ERR,
+    ASM_MEM_ALC_ERR = 101,
     COMP_ERR = 404,
     NOLABEL = 0xF0
 };
@@ -104,6 +109,7 @@ cmd commands[COMMANDS_NUM] = {
 {"jne", JNE},
 {"call", CALL},
 {"mov", MOV_GRP},
+{"sqrt", SQRT},
 //{"graph", GRAPHICS}
 };
 
