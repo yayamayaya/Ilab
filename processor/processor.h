@@ -1,5 +1,10 @@
 #pragma once
 
+#include "../stack/stack.h"
+#include "../assembler/asm.h"
+#include "../onegin/fileReader.h"
+#include "../common/log.h"
+
 enum DEBUG_CODE
 {
     FATAL_ERROR = 1001,
