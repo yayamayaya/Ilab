@@ -16,8 +16,9 @@ int addDescription(node_t *node);
 void addAnswer(node_t *node);
 int Akinator(node_t *treeNode);
 
-int takeDescription(class stack<char> *description, node_t *node, char *objName);
-class stack<char> giveDescription(node_t *root, const char *descrLogName);
+int findDescription(class Stack<char> *description, node_t *node, char *objName);
+class Stack<char> takeDescription(node_t *root, const char *descrLogName);
+void giveDescription(node_t *node);
 int compareTwoObjects(node_t *root);
 
 enum ANSWERS 
