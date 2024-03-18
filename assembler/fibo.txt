@@ -1,0 +1,32 @@
+in
+pop dx
+push 0
+pop bx
+push 1
+jmp fibo
+
+end:
+    pop cx
+    out
+    halt
+
+
+fibo:
+    pop ax
+    push ax
+    push bx
+    add             
+    mov bx, ax
+    call inc
+    push cx push dx
+    je end
+    pop cx
+    jmp fibo
+
+inc:
+    push cx
+    push 1
+    add
+    pop cx
+    ret
+
