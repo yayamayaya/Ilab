@@ -9,12 +9,16 @@ asmrunval:
 	valgrind ./asm code.txt bytecode.txt
 asmrunfact:
 	./asm ../assembler/factorial.txt bytecode.txt logFile.log
+asmrunkv:
+	valgrind -s --leak-check=full ./asm ../assembler/kvadratka.txt bytecode.txt
+asmrunfibo:
+	valgrind -s --leak-check=full ./asm ../assembler/fibo.txt bytecode.txt
 
 
 spu-main:
-	g++  -g ../processor/processor.cpp ../onegin/fileReader.c ../stack/stack.h ../stack/stack.hpp -o spu
+	g++  -g ../processor/processor.cpp ../stack/stack.cpp ../onegin/fileReader.c ../stack/stack.h ../stack/stack.hpp -o spu
 spu-debug:
-	g++ -fsanitize=address -DDEBUG -DSECURE -g ../processor/processor.cpp ../onegin/fileReader.c ../stack/stack.h ../common/log.cpp -o spu
+	g++ -fsanitize=address -DDEBUG -DSECURE -g ../stack/stack.cpp ../processor/processor.cpp ../onegin/fileReader.c ../stack/stack.hpp ../common/log.cpp -o spu
 
 
 spurun:
