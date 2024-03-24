@@ -334,4 +334,10 @@ int Stack<T>::getDataOnPos(const int pos)
     return *(getDataPtr() + pos);
 }
 
+template <typename T>
+int Stack<T>::getStackSize()
+{
+    return size;
+}
+
 #endif

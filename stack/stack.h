@@ -24,6 +24,7 @@ public:
     int stackVerificator();
     int stk_realloc(const int num);
     int getDataOnPos(const int pos);
+    int getStackSize();
 
 private:
     static constexpr canary_t kLeftCanary = 0xABEBADED;
