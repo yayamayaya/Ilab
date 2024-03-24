@@ -67,7 +67,7 @@ int readToBuff(const char *fileName, char **buffPtr, int *fileSize)
     }
 
     rewind(file);                                        //Возвращаемся в начало файла
-    if (fread(Buff, sizeof(char), size, file) < size)       //Условие на ошибки
+    if ((int)fread(Buff, sizeof(char), size, file) < size)       //Условие на ошибки
     {
         printf(">>>Text reading error.\n");
         return 1;
