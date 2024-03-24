@@ -1,9 +1,8 @@
-#include <stdio.h>
-#include <assert.h>
-#include <stdarg.h>
+#include "log.h"
 
 void fileLog(FILE *logFileName, const char *format, ...)
 {
+#ifdef DEBUG
     assert(logFileName);
 
     va_list arg = {};
@@ -12,17 +11,20 @@ void fileLog(FILE *logFileName, const char *format, ...)
     va_end(arg);
 
     fflush(logFileName);
+#endif
 }
 
 
 //Название логфайла передаётся последним в аргв
 FILE *openLogFile(const int argNum, const char **argv, const char *StandardFileName, const char *format, ...)
 {
+    FILE *logFile = NULL;    
+#ifdef DEBUG
     assert(argv);
     assert(StandardFileName);
     setbuf(stdout, NULL);
 
-    FILE *logFile = NULL;
+
 
     if (argv[argNum - 1] != NULL)
         logFile = fopen(argv[argNum - 1], "w");
@@ -42,6 +44,6 @@ FILE *openLogFile(const int argNum, const char **argv, const char *StandardFileN
     va_end(args);
 
     fflush(logFile);
-
+#endif
     return logFile;
 }
