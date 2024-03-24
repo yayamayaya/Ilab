@@ -1,8 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-#include "akinator.h"
-#include "../BinaryTree/BinaryTree.h"
+#include "../main.h"
 
 node_t *readDataBase(char *buff, int *pos)
 {

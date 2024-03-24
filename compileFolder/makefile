@@ -32,9 +32,9 @@ treeTest-m:
 
 
 akin-main:
-	g++ -g ../stack/stack.hpp ../stack/stack.cpp ../akinator/akinator.cpp ../akinator/akinate.cpp ../akinator/workWithDescription.cpp ../BinaryTree/BinaryTree.cpp ../akinator/dataBaseRead.cpp ../onegin/fileReader.c -o akinator
+	g++ -g ../stack/stack.hpp ../stack/stack.cpp ../akinator/main.cpp ../akinator/src/akinate.cpp ../akinator/src/workWithDescription.cpp ../binary_tree/BinaryTree.cpp ../akinator/data/dataBaseRead.cpp ../onegin/fileReader.c -o akinator
 akin-debug:
-	g++ -g -DDEBUG ../common/log.cpp ../stack/stack.hpp ../stack/stack.cpp ../akinator/akinator.cpp ../akinator/akinate.cpp ../akinator/workWithDescription.cpp ../BinaryTree/BinaryTree.cpp ../akinator/dataBaseRead.cpp ../onegin/fileReader.c -o akinator
+	g++ -g -DDEBUG ../common/log.cpp ../stack/stack.hpp ../stack/stack.cpp ../akinator/main.cpp ../akinator/src/akinate.cpp ../akinator/src/workWithDescription.cpp ../binary_tree/BinaryTree.cpp ../akinator/data/dataBaseRead.cpp ../onegin/fileReader.c -o akinator
 
 akinrun:
 	./akinator

@@ -1,7 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include "akinator.h"
+#include "../main.h"
 
 int findDescription(class Stack<char> *description, node_t *node, char *objName)
 {
@@ -48,7 +46,7 @@ class Stack<char> takeDescription(node_t *root, const char *descrLogName)
     //description.stackPrint(IN_CONSOLE);
     free(object);
 
-    if (description.size == 0)
+    if (description.getStackSize() == 0)
         printf(">>  Given object not found.\n");
     
 
@@ -60,14 +58,15 @@ void giveDescription(node_t *node)
     printf(">>  Give a name of an object, which description you want to find:\n");
     Stack<char> description = takeDescription(node, "descriptionLog.log");
 
-    if (description.size == 0)
+    int descrSize = description.getStackSize();
+    if (!descrSize)
     {
         description.stackDtor();
         return;
     }
     
     printf(">>  Given object has next description:\n");
-    for (int i = 0; i < description.size; i++)
+    for (int i = 0; i < descrSize; i++)
     {
         if(node == NULL)
             break;
@@ -83,7 +82,7 @@ void giveDescription(node_t *node)
             node = node->right;
         }
 
-        if (i == description.size - 1)
+        if (i == descrSize - 1)
             printf(".\n", node->data);     
         else 
             printf(", ");       
@@ -103,26 +102,50 @@ int compareTwoObjects(node_t *node)
     printf(">>  Give a name of another object:\n");
     Stack<char> description2 = takeDescription(node, "descriptionLog2.log");
 
-    printf(">> These objects are:\n");
+    node_t *node1 = node;
+    node_t *node2 = node;
 
-    for (int i = 0; i < description1.size && i < description2.size; i++)
-    {
-        if (description1.getDataOnPos(i) == description2.getDataOnPos(i))
-            if (description1.getDataOnPos(i))
+    int descr1Size = description1.getStackSize();
+    int descr2Size = description2.getStackSize();
+
+    printf(">> These objects are:\n");
+    int pos = 0;
+    
+        if (description1.getDataOnPos(0) == description2.getDataOnPos(0))
+            printf(">> Both objects are: ");
+
+        while (description1.getDataOnPos(pos) == description2.getDataOnPos(pos))
+        {
+            if (description1.getDataOnPos(pos))
             {
-                printf("both %s", node->data);
-                node = node->left;
-                continue;
+                printf(" %s,", node1->data);
+                node1 = node1->left;
+                node2 = node2->left;
             }
             else
             {   
-                printf("both not %s", node->data);
-                node = node->right;
-                continue;
+                printf("both not %s", node1->data);
+                node1 = node1->left;
+                node2 = node2->left;
             }
-        
+            pos++;
+        }
+        printf(".\n");
+        printf(">> Object 1 is different from object 2:\n it is");        
+    for (; pos < descr1Size && pos < descr2Size; pos++)
+    {   
+        if (description1.getDataOnPos(pos))
+        {
+            printf(" %s,", node1->data);
+            node1 = node1->left;
+        }
+        else
+        {
+            printf(" not %s,", node2->data);
+            node2 = node2->right;
+        }
     }
-    
+    printf(".\n");
     
     
     description1.stackDtor();

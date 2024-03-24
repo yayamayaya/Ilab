@@ -1,14 +1,25 @@
-#pragma once
-
 #ifndef AKINATOR
 #define AKINATOR
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 #include <assert.h>
 #include "../common/log.h"
-#include "../BinaryTree/BinaryTree.h"
-#include "../stack/stack.hpp"
+#include "../binary_tree/BinaryTree.h"
+#include "../stack/stack.h"
+#include "../onegin/fileReader.h"
+#include "data/dataBaseRead.h"
+
+#define DATABASE_LOC "../akinator/data/dataBase.txt"
 
 #define MAX_STRING_LENGTH 50
+
+#ifdef DEBUG
+#define LOG(format, ...) fileLog(akLog, format, __VA_ARGS__)
+#else
+#define LOG(format, ...) do {} while (0)
+#endif
 
 int takeAString(char **strPtr);
 int akinatorAsk(const char *format, const char *string);

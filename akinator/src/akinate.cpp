@@ -1,12 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include "akinator.h"
-
-#ifdef DEBUG
-#define LOG(format, ...) fileLog(akLog, format, __VA_ARGS__)
-#else
-#define LOG(format, ...) do {} while(0)
-#endif
+#include "../main.h"
 
 extern FILE *akLog;
 extern const char *format;

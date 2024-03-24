@@ -1,9 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include "akinator.h"
-#include "../onegin/fileReader.h"
-#include "dataBaseRead.h"
+#include "main.h"
 
 FILE *akLog = NULL;
 const char *format = "%20s|%20d|%20s\n";
@@ -13,7 +8,6 @@ const char *format = "%20s|%20d|%20s\n";
 #else
 #define AK_LOG_CLOSE() do {} while (0)
 #endif
-
 
 int startAkinator(node_t *root);
 int chooseAction();
@@ -30,13 +24,18 @@ int main(const int argc, const char *argv[])
     char *buff = NULL;
     int pos = 0;
 
-    readToBuff("../akinator/dataBase.txt", &buff, NULL);
+    readToBuff(DATABASE_LOC, &buff, NULL);
+    if (buff == NULL)
+    {
+        LOG(">> data base has NULL pointer", "");
+    }
+    
     node_t *root = readDataBase(buff, &pos);
     free(buff);
 
     int errorMsg = startAkinator(root);
     
-    FILE *dataBase = fopen("../akinator/dataBase.txt", "w");
+    FILE *dataBase = fopen(DATABASE_LOC, "w");
     treePrint(dataBase, root);
     fclose(dataBase);
     treeKill_string(root);
@@ -62,15 +61,15 @@ int startAkinator(node_t *root)
                 return akinMsg;
         }
         else if (option == DESCRIPTION)
-        {
             giveDescription(root);
-        }
         else if (option == COMPARE)
-        {
             compareTwoObjects(root);
-        }
         
     } while (akinatorAsk(">>  Do you want to continue%s", "?"));
+    
+    if (akinatorAsk(">> Do you want to create a picture if a database%s", "?"))
+        system("../akinator/graph_creator/graph");
+    
 
     return FATAL_ERR;
 }

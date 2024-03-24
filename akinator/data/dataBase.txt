@@ -1,0 +1,1 @@
+{"Animal"{"it likes to bark"{"dog"{}{}}{"it likes when you touch it"{"kapibara"{}{}}{"poltorashka"{}{}}}}{"kak ded, no net"{"taburetka"{}{}}{"ded"{}{}}}}

@@ -220,7 +220,7 @@ int treeKill_string(node_t *node)
     return 0;
 }
 
-static void fileLog(const char *format, ...)
+/*static void fileLog(const char *format, ...)
 {
     va_list args = {};
 
@@ -229,4 +229,4 @@ static void fileLog(const char *format, ...)
     va_end(args);
 
     fflush(logFile);
-}
+}*/

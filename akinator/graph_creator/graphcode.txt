@@ -1,0 +1,21 @@
+digraph G
+{
+    graph [dpi = 1000];
+    bgcolor = "#9F8C76"
+
+    node[shape = "box", style = "rounded, filled",
+    height = 1, width = 2,
+    fillcolor = "#F5F5DC",
+    fontsize = 17,
+    fontname = "Courier New",
+    fontcolor = "#1a1718",
+    penwidth = 2, color = "#1a1718"
+    ]
+
+	"Animal" -> "it likes to bark" [color = "#478056"];
+	"it likes to bark" -> "dog" [color = "#478056"];
+	"it likes to bark" -> "it likes when you touch it" [color = "#632b2b"];
+	"it likes when you touch it" -> "kapibara" [color = "#478056"];
+	"it likes when you touch it" -> "poltorashka" [color = "#632b2b"];
+	"Animal" -> "ded" [color = "#632b2b"];
+}
